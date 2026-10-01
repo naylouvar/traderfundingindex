@@ -1,0 +1,300 @@
+// Data model for TraderFundingIndex.
+// MySQL is used because every Hostinger plan includes it; switching to
+// Postgres later only means changing the provider below.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum AssetClass {
+  FUTURES
+  FOREX
+  CRYPTO
+}
+
+enum FirmStatus {
+  ACTIVE
+  UNDER_WATCH
+  CLOSED
+}
+
+enum DrawdownType {
+  END_OF_DAY_TRAILING
+  INTRADAY_TRAILING
+  STATIC
+}
+
+enum RuleCategory {
+  NEWS
+  CONSISTENCY
+  CONTRACT_LIMIT
+  TRADING_HOURS
+  OVERNIGHT
+  AUTOMATION
+  IP_VPN
+  PAYOUT
+  OTHER
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CountryStatus {
+  ALLOWED
+  RESTRICTED
+  BANNED
+}
+
+enum Role {
+  MEMBER
+  VERIFIED
+  MODERATOR
+  ADMIN
+}
+
+enum ReviewOutcome {
+  FAILED
+  PASSED
+  PAID
+  DENIED
+}
+
+enum PayoutStatus {
+  PAID
+  DELAYED
+  DENIED
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Firm {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  website        String?
+  foundedYear    Int?
+  hqCountry      String?    @db.Char(2)
+  assetClass     AssetClass @default(FUTURES)
+  status         FirmStatus @default(ACTIVE)
+  platforms      String? // e.g. "Tradovate, Rithmic, NinjaTrader"
+  description    String?    @db.Text
+  lastVerifiedAt DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  plans         Plan[]
+  rules         Rule[]
+  countryRules  CountryRule[]
+  reviews       Review[]
+  payoutReports PayoutReport[]
+  threads       ForumThread[]
+}
+
+model Plan {
+  id                String        @id @default(cuid())
+  firmId            String
+  firm              Firm          @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  name              String
+  assetClass        AssetClass    @default(FUTURES)
+  accountSizeUsd    Int
+  priceUsd          Decimal?      @db.Decimal(10, 2)
+  activationFeeUsd  Decimal?      @db.Decimal(10, 2)
+  resetFeeUsd       Decimal?      @db.Decimal(10, 2)
+  dataFeeUsd        Decimal?      @db.Decimal(10, 2)
+  phases            Int?
+  profitTargetUsd   Int?
+  maxDrawdownUsd    Int?
+  dailyLossLimitUsd Int?
+  drawdownType      DrawdownType?
+  maxContracts      Int?
+  minTradingDays    Int?
+  profitSplitPct    Int? // trader share, e.g. 90
+  payoutFrequency   String?
+  scalingNotes      String?       @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  rules   Rule[]
+  changes RuleChange[]
+  reviews Review[]
+
+  @@index([firmId])
+}
+
+model Rule {
+  id        String       @id @default(cuid())
+  firmId    String
+  firm      Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  planId    String?
+  plan      Plan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  category  RuleCategory
+  text      String       @db.Text
+  severity  Severity     @default(MEDIUM)
+  hidden    Boolean      @default(false) // buried in the terms rather than on the pricing page
+  sourceUrl String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  changes RuleChange[]
+
+  @@index([firmId])
+}
+
+// Dated history of rule and plan changes, to expose changes made after purchase.
+model RuleChange {
+  id        String   @id @default(cuid())
+  ruleId    String?
+  rule      Rule?    @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  planId    String?
+  plan      Plan?    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  field     String
+  oldValue  String?  @db.Text
+  newValue  String?  @db.Text
+  changedOn DateTime
+  sourceUrl String?
+  createdAt DateTime @default(now())
+}
+
+model CountryRule {
+  id          String        @id @default(cuid())
+  firmId      String
+  firm        Firm          @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  countryCode String        @db.Char(2)
+  status      CountryStatus
+  note        String?
+  sourceUrl   String?
+
+  @@unique([firmId, countryCode])
+}
+
+model User {
+  id         String   @id @default(cuid())
+  handle     String   @unique
+  email      String   @unique
+  country    String?  @db.Char(2)
+  role       Role     @default(MEMBER)
+  reputation Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  reviews       Review[]
+  payoutReports PayoutReport[]
+  threads       ForumThread[]
+  posts         ForumPost[]
+  strategies    Strategy[]
+  reports       Report[]
+}
+
+model Review {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firmId            String
+  firm              Firm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  planId            String?
+  plan              Plan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  outcome           ReviewOutcome
+  overall           Int // 1 to 5
+  payoutReliability Int?
+  ruleFairness      Int?
+  support           Int?
+  transparency      Int?
+  body              String           @db.Text
+  verified          Boolean          @default(false)
+  moderation        ModerationStatus @default(PENDING)
+  createdAt         DateTime         @default(now())
+
+  proofs Proof[]
+
+  @@index([firmId])
+}
+
+model PayoutReport {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firmId       String
+  firm         Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  amountUsd    Decimal      @db.Decimal(12, 2)
+  requestedOn  DateTime
+  paidOn       DateTime?
+  status       PayoutStatus
+  denialReason String?      @db.Text
+  createdAt    DateTime     @default(now())
+
+  proofs Proof[]
+
+  @@index([firmId])
+}
+
+model Proof {
+  id             String           @id @default(cuid())
+  fileUrl        String
+  kind           String // receipt, payout, certificate
+  moderation     ModerationStatus @default(PENDING)
+  reviewId       String?
+  review         Review?          @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  payoutReportId String?
+  payoutReport   PayoutReport?    @relation(fields: [payoutReportId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+}
+
+model ForumThread {
+  id        String   @id @default(cuid())
+  category  String
+  firmId    String?
+  firm      Firm?    @relation(fields: [firmId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime @default(now())
+
+  posts ForumPost[]
+}
+
+model ForumPost {
+  id        String      @id @default(cuid())
+  threadId  String
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String      @db.Text
+  votes     Int         @default(0)
+  createdAt DateTime    @default(now())
+}
+
+model Strategy {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  market    String // e.g. ES, NQ, CL
+  timeframe String?
+  rules     String   @db.Text
+  results   String?  @db.Text
+  votes     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Moderation reports on any user content.
+model Report {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String // review, post, strategy, payout
+  targetId   String
+  reason     String           @db.Text
+  status     ModerationStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+}
