@@ -7,7 +7,7 @@ Product plan: https://claude.ai/code/artifact/89762862-a503-4e3f-aba9-da25f7cbad
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS
-- Prisma with MySQL (included in every Hostinger plan; switch `provider` in `prisma/schema.prisma` to move to Postgres)
+- Prisma with MySQL (managed by CloudPanel; switch `provider` in `prisma/schema.prisma` to move to Postgres)
 
 ## Local setup
 
@@ -19,13 +19,9 @@ npm run db:seed           # add the seed firms
 npm run dev               # http://localhost:3000
 ```
 
-## Deploying on Hostinger
+## Deploying
 
-Next.js needs a Node.js runtime, so it runs on a Hostinger plan with Node.js web apps (Business or Cloud) or on a Hostinger VPS. Plain shared PHP hosting cannot run it.
-
-1. Create a MySQL database in hPanel and put its connection string in `DATABASE_URL`.
-2. Connect this GitHub repository as a Node.js app (build command `npm run build`, start command `npm start`), or on a VPS clone it and run it with `pm2 start npm -- start`.
-3. Run `npm run db:push` and `npm run db:seed` once against the production database.
+The site runs on an OVH VPS with Ubuntu 24.04 and CloudPanel. See [DEPLOY.md](DEPLOY.md) for the full guide.
 
 ## Project layout
 

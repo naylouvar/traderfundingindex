@@ -1,5 +1,5 @@
 // Data model for TraderFundingIndex.
-// MySQL is used because every Hostinger plan includes it; switching to
+// MySQL is used because CloudPanel manages it on the VPS; switching to
 // Postgres later only means changing the provider below.
 
 generator client {
