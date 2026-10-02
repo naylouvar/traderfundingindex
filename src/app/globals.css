@@ -21,3 +21,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* Admin form controls */
+@layer components {
+  .input {
+    @apply w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm text-foreground outline-none focus:border-accent;
+  }
+  .btn-primary {
+    @apply rounded-md bg-accent px-4 py-2 text-sm font-medium text-black hover:opacity-90 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply rounded-md border border-white/15 px-3 py-2 text-sm hover:bg-white/5;
+  }
+  .btn-danger {
+    @apply rounded-md border border-red-500/40 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10;
+  }
+}
