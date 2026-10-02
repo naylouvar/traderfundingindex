@@ -71,8 +71,14 @@ cd www.traderfundingindex.com
 Create the `.env` file with the database details from step 5:
 
 ```bash
-echo 'DATABASE_URL="mysql://DB_USER:DB_PASSWORD@127.0.0.1:3306/DB_NAME"' > .env
+cat > .env <<EOT
+DATABASE_URL="mysql://DB_USER:DB_PASSWORD@127.0.0.1:3306/DB_NAME"
+ADMIN_PASSWORD="CHOOSE_A_LONG_PASSWORD"
+SESSION_SECRET="$(openssl rand -hex 32)"
+EOT
 ```
+
+`ADMIN_PASSWORD` is what you type at `/admin` to manage firms. `SESSION_SECRET` is generated for you.
 
 If the password contains special characters such as `@`, `:` or `/`, URL-encode them (for example `@` becomes `%40`).
 

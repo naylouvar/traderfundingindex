@@ -19,6 +19,11 @@ npm run db:seed           # add the seed firms
 npm run dev               # http://localhost:3000
 ```
 
+## Admin panel
+
+Go to `/admin` and log in with `ADMIN_PASSWORD` to add firms and edit their plans, rules and country restrictions.
+Edits to an existing plan or rule are recorded in the change log. Set `ADMIN_PASSWORD` and `SESSION_SECRET` in `.env` (see `.env.example`).
+
 ## Deploying
 
 The site runs on an OVH VPS with Ubuntu 24.04 and CloudPanel. See [DEPLOY.md](DEPLOY.md) for the full guide.
