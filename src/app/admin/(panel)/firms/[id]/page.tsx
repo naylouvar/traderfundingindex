@@ -94,7 +94,18 @@ export default async function EditFirmPage({ params, searchParams }: PageProps<"
           <Field label="HQ country (2 letters)" name="hqCountry" defaultValue={firm.hqCountry} placeholder="US" />
           <Select label="Status" name="status" defaultValue={firm.status} options={firmStatusOptions} />
           <Select label="Asset class" name="assetClass" defaultValue={firm.assetClass} options={assetClassOptions} />
+          <Field label="Logo URL" name="logoUrl" type="url" defaultValue={firm.logoUrl} placeholder="https://…/logo.png" />
+          <div />
           <TextArea label="Description" name="description" defaultValue={firm.description} className="sm:col-span-2" />
+          <h3 className="pt-2 font-medium sm:col-span-2">Offer</h3>
+          <Field label="Discount code" name="promoCode" defaultValue={firm.promoCode} />
+          <Field label="Discount (%)" name="promoDiscountPct" type="number" defaultValue={firm.promoDiscountPct} />
+          <Field label="Offer link (shown as a partner link)" name="promoUrl" type="url" defaultValue={firm.promoUrl} />
+          <Field label="Offer ends on" name="promoEndsAt" type="date" defaultValue={firm.promoEndsAt?.toISOString().slice(0, 10)} />
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" name="featured" defaultChecked={firm.featured} />
+            Show this offer in the homepage offers strip
+          </label>
           <div className="sm:col-span-2">
             <button className="btn-primary">Save details</button>
           </div>

@@ -10,3 +10,10 @@ export const drawdownLabel: Record<DrawdownType, string> = {
   INTRADAY_TRAILING: "Intraday trailing",
   STATIC: "Static",
 };
+
+export function compactUsd(value: number | null | undefined) {
+  if (value === null || value === undefined) return "—";
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
+  if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
+  return `$${value}`;
+}
