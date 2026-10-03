@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { createSession, destroySession, passwordMatches, requireAdmin } from "@/lib/auth";
-import { decimal, int, oneOf, requiredText, slugify, text } from "@/lib/form";
+import { date, decimal, int, oneOf, requiredText, slugify, text } from "@/lib/form";
 
 const FIRM_STATUSES = ["ACTIVE", "UNDER_WATCH", "CLOSED"] as const;
 const ASSET_CLASSES = ["FUTURES", "FOREX", "CRYPTO"] as const;
@@ -60,6 +60,12 @@ function firmData(form: FormData) {
     status: oneOf(form, "status", FIRM_STATUSES) ?? "ACTIVE",
     platforms: text(form, "platforms"),
     description: text(form, "description"),
+    logoUrl: text(form, "logoUrl"),
+    featured: form.get("featured") === "on",
+    promoCode: text(form, "promoCode"),
+    promoDiscountPct: int(form, "promoDiscountPct"),
+    promoUrl: text(form, "promoUrl"),
+    promoEndsAt: date(form, "promoEndsAt"),
   };
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -29,28 +30,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header className="border-b border-white/10">
-          <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-4 text-sm">
-            <Link href="/" className="text-base font-semibold">
-              TraderFundingIndex
-            </Link>
-            <Link href="/firms" className="text-muted hover:text-foreground">
-              Firms
-            </Link>
-            <span className="text-muted/60" title="Coming in phase 2">
-              Forum
-            </span>
-            <span className="text-muted/60" title="Coming in phase 3">
-              Strategies
-            </span>
-          </nav>
-        </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
-          {children}
-        </main>
-        <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-muted">
-          Reviews are traders&apos; own experiences. Rankings are never paid for.
-        </footer>
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );

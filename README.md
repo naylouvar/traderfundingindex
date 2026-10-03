@@ -19,6 +19,10 @@ npm run db:seed           # add the seed firms
 npm run dev               # http://localhost:3000
 ```
 
+## Editing site text
+
+All homepage, header and footer text (hero, FAQ, newsletter, footer links) lives in `src/content/site.ts`. Firm data, logos and offers are edited in the admin panel.
+
 ## Admin panel
 
 Go to `/admin` and log in with `ADMIN_PASSWORD` to add firms and edit their plans, rules and country restrictions.

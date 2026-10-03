@@ -80,19 +80,25 @@ enum ModerationStatus {
 }
 
 model Firm {
-  id             String     @id @default(cuid())
-  name           String
-  slug           String     @unique
-  website        String?
-  foundedYear    Int?
-  hqCountry      String?    @db.Char(2)
-  assetClass     AssetClass @default(FUTURES)
-  status         FirmStatus @default(ACTIVE)
-  platforms      String? // e.g. "Tradovate, Rithmic, NinjaTrader"
-  description    String?    @db.Text
-  lastVerifiedAt DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id               String     @id @default(cuid())
+  name             String
+  slug             String     @unique
+  website          String?
+  foundedYear      Int?
+  hqCountry        String?    @db.Char(2)
+  assetClass       AssetClass @default(FUTURES)
+  status           FirmStatus @default(ACTIVE)
+  platforms        String? // e.g. "Tradovate, Rithmic, NinjaTrader"
+  logoUrl          String?
+  featured         Boolean    @default(false) // shown in the homepage offers strip
+  promoCode        String?
+  promoDiscountPct Int?
+  promoUrl         String? // where the offer button links (labelled as a partner link)
+  promoEndsAt      DateTime?
+  description      String?    @db.Text
+  lastVerifiedAt   DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   plans         Plan[]
   rules         Rule[]
@@ -297,4 +303,10 @@ model Report {
   reason     String           @db.Text
   status     ModerationStatus @default(PENDING)
   createdAt  DateTime         @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
 }

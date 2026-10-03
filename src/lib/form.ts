@@ -29,6 +29,14 @@ export function decimal(form: FormData, key: string) {
   return cleaned;
 }
 
+export function date(form: FormData, key: string) {
+  const value = text(form, key);
+  if (value === null) return null;
+  const parsed = new Date(`${value}T23:59:59Z`);
+  if (Number.isNaN(parsed.getTime())) throw new Error(`${key} must be a date`);
+  return parsed;
+}
+
 export function oneOf<T extends string>(form: FormData, key: string, options: readonly T[]) {
   const value = text(form, key);
   if (value === null) return null;
