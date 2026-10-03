@@ -95,6 +95,8 @@ model Firm {
   promoDiscountPct Int?
   promoUrl         String? // where the offer button links (labelled as a partner link)
   promoEndsAt      DateTime?
+  sortOrder        Int        @default(0) // lower shows first in the rankings; ties fall back to rating
+  editorRating     Decimal?   @db.Decimal(2, 1) // 0.0 to 5.0, shown until the firm has approved reviews
   description      String?    @db.Text
   lastVerifiedAt   DateTime?
   createdAt        DateTime   @default(now())
@@ -204,12 +206,14 @@ model User {
 
 model Review {
   id                String           @id @default(cuid())
-  userId            String
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorName        String? // for reviews entered by the admin, before member accounts exist
   firmId            String
   firm              Firm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
   planId            String?
   plan              Plan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  title             String?
   outcome           ReviewOutcome
   overall           Int // 1 to 5
   payoutReliability Int?
@@ -309,4 +313,12 @@ model NewsletterSubscriber {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+// Admin-edited site text, stored as JSON per section and merged over the
+// defaults in src/content/site.ts.
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }

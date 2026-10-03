@@ -1,4 +1,12 @@
-export function Stars({ rating, count }: { rating: number | null; count: number }) {
+export function Stars({
+  rating,
+  count,
+  source = "reviews",
+}: {
+  rating: number | null;
+  count: number;
+  source?: "reviews" | "editor" | null;
+}) {
   if (rating === null) {
     return <span className="whitespace-nowrap text-xs text-muted">No reviews yet</span>;
   }
@@ -9,7 +17,7 @@ export function Stars({ rating, count }: { rating: number | null; count: number 
         {"★".repeat(Math.round(rating))}
         <span className="text-white/20">{"★".repeat(5 - Math.round(rating))}</span>
       </span>
-      <span className="text-muted">{count} reviews</span>
+      <span className="text-muted">{source === "editor" ? "Editor rating" : `${count} ${count === 1 ? "review" : "reviews"}`}</span>
     </span>
   );
 }

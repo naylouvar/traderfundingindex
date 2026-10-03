@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { site } from "@/content/site";
+import { getContent } from "@/lib/content";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const site = await getContent();
   return (
     <footer className="mt-20 border-t border-white/10">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">

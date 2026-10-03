@@ -2,11 +2,10 @@
 
 import { useActionState } from "react";
 import { subscribe } from "@/app/actions";
-import { site } from "@/content/site";
+import type { SiteContent } from "@/lib/content";
 
-export function Newsletter() {
+export function Newsletter({ copy }: { copy: SiteContent["newsletter"] }) {
   const [state, action, pending] = useActionState(subscribe, null);
-  const copy = site.newsletter;
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-accent/20 via-transparent to-transparent px-6 py-12 text-center">
       <p className="text-xs font-semibold uppercase tracking-widest text-accent">{copy.eyebrow}</p>

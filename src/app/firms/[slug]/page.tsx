@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ReviewList } from "@/components/review-list";
 import { db } from "@/lib/db";
 import { drawdownLabel, usd } from "@/lib/format";
 
@@ -18,7 +19,11 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
       plans: { orderBy: { accountSizeUsd: "asc" } },
       rules: { orderBy: { severity: "desc" } },
       countryRules: { where: { status: { not: "ALLOWED" } } },
-      reviews: { where: { moderation: "APPROVED" } },
+      reviews: {
+        where: { moderation: "APPROVED" },
+        orderBy: { createdAt: "desc" },
+        include: { firm: { select: { name: true, slug: true, logoUrl: true } }, user: { select: { handle: true } } },
+      },
     },
   });
   if (!firm) notFound();
@@ -121,11 +126,7 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Trader reviews</h2>
-        <p className="text-muted">
-          {firm.reviews.length === 0
-            ? "No reviews yet."
-            : `${firm.reviews.length} approved reviews.`}
-        </p>
+        <ReviewList reviews={firm.reviews} />
       </section>
     </div>
   );
