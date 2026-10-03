@@ -1,9 +1,14 @@
-import type { ReactNode } from "react";
-import { getContent, type EditableSection } from "@/lib/content";
-import { saveSection } from "../../actions";
+import Link from "next/link";
+import { getContent } from "@/lib/content";
+import { Field as Input, SavedNote, SectionForm as Section } from "../../_components/section-form";
+
+const RETURN = "/admin/homepage";
+
+function SectionForm(props: Omit<Parameters<typeof Section>[0], "returnTo">) {
+  return <Section {...props} returnTo={RETURN} />;
+}
 
 const savedLabel: Record<string, string> = {
-  promoBar: "Promo bar",
   hero: "Hero",
   stats: "Stat badges",
   offers: "Offers block",
@@ -11,52 +16,7 @@ const savedLabel: Record<string, string> = {
   pillars: "Feature cards",
   faq: "FAQ",
   newsletter: "Newsletter block",
-  footer: "Footer",
 };
-
-function SectionForm({
-  section,
-  title,
-  hint,
-  children,
-}: {
-  section: EditableSection;
-  title: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section id={section} className="scroll-mt-6 space-y-4 rounded-lg border border-white/10 p-5">
-      <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {hint && <p className="text-sm text-muted">{hint}</p>}
-      </div>
-      <form action={saveSection} className="space-y-4">
-        <input type="hidden" name="section" value={section} />
-        {children}
-        <div className="flex flex-wrap items-center gap-4">
-          <button className="btn-primary">Save</button>
-          <label className="flex items-center gap-2 text-xs text-muted">
-            <input type="checkbox" name="reset" /> Reset this block to the default text
-          </label>
-        </div>
-      </form>
-    </section>
-  );
-}
-
-function Input({ label, name, value, long }: { label: string; name: string; value?: string; long?: boolean }) {
-  return (
-    <label className="block space-y-1 text-sm">
-      <span className="text-muted">{label}</span>
-      {long ? (
-        <textarea name={name} defaultValue={value ?? ""} rows={3} className="input" />
-      ) : (
-        <input name={name} defaultValue={value ?? ""} className="input" />
-      )}
-    </label>
-  );
-}
 
 export default async function HomepageAdmin({ searchParams }: PageProps<"/admin/homepage">) {
   const { saved } = await searchParams;
@@ -69,20 +29,16 @@ export default async function HomepageAdmin({ searchParams }: PageProps<"/admin/
       <div>
         <h1 className="text-2xl font-semibold">Homepage text</h1>
         <p className="text-sm text-muted">
-          Edit the blocks above and around the rankings table. Changes go live as soon as you save.
+          Edit the blocks above and around the rankings table. Changes go live as soon as you save. The promo bar,
+          menu and footer are under{" "}
+          <Link href="/admin/site" className="underline">
+            Header &amp; footer
+          </Link>
+          .
         </p>
       </div>
-      {typeof saved === "string" && savedLabel[saved] && (
-        <p className="rounded-md bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300">{savedLabel[saved]} saved.</p>
-      )}
+      <SavedNote saved={saved} labels={savedLabel} />
 
-      <SectionForm section="promoBar" title="Promo bar" hint="The coloured strip at the very top of every page.">
-        <Input label="Text" name="promoBar.text" value={c.promoBar.text} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Button label" name="promoBar.linkLabel" value={c.promoBar.linkLabel} />
-          <Input label="Button link" name="promoBar.href" value={c.promoBar.href} />
-        </div>
-      </SectionForm>
 
       <SectionForm section="hero" title="Hero" hint="The big headline at the top of the homepage.">
         <Input label="Headline" name="hero.title" value={c.hero.title} />
@@ -150,10 +106,6 @@ export default async function HomepageAdmin({ searchParams }: PageProps<"/admin/
         </div>
       </SectionForm>
 
-      <SectionForm section="footer" title="Footer" hint="Footer links are set in src/content/site.ts.">
-        <Input label="Tagline" name="footer.tagline" value={c.footer.tagline} />
-        <Input label="Disclaimer" name="footer.disclaimer" value={c.footer.disclaimer} long />
-      </SectionForm>
     </div>
   );
 }

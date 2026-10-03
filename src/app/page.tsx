@@ -28,7 +28,19 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   return (
     <div className="space-y-16">
-      <section className="space-y-6 pt-4 text-center">
+      <section className="space-y-6 pt-6 text-center">
+        <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1 text-xs">
+          {site.assetTabs.map((tab) => (
+            <span
+              key={tab.label}
+              title={tab.active ? undefined : "Coming later"}
+              className={tab.active ? "rounded-full bg-accent px-3 py-1 font-semibold text-black" : "px-3 py-1 text-muted/60"}
+            >
+              {tab.label}
+              {!tab.active && <span className="ml-1 text-[10px] uppercase">soon</span>}
+            </span>
+          ))}
+        </div>
         <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">{site.hero.title}</h1>
         <p className="mx-auto max-w-2xl text-lg text-muted">{site.hero.subtitle}</p>
         <div className="flex flex-wrap justify-center gap-3">

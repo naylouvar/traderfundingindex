@@ -4,9 +4,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { EDITABLE_SECTIONS, type EditableSection } from "@/lib/content";
+import { EDITABLE_SECTIONS, getContent, type EditableSection } from "@/lib/content";
 import { saveImage, UploadError } from "@/lib/uploads";
 import { site } from "@/content/site";
+import { defaultPages, RESERVED_SLUGS } from "@/content/pages";
+import { listPages } from "@/lib/pages";
 import { createSession, destroySession, passwordMatches, requireAdmin } from "@/lib/auth";
 import { date, decimal, int, oneOf, requiredText, slugify, text } from "@/lib/form";
 
@@ -427,6 +429,10 @@ function sectionValue(section: EditableSection, form: FormData) {
     const current = (base as Record<string, unknown>)[key];
     if (key === "items" && section === "faq") {
       value.items = listValue("faq.items", form);
+    } else if (key === "columns" && section === "footer") {
+      value.columns = listValue("footer.columns", form)
+        .filter((col) => col.title)
+        .map((col) => ({ title: col.title, links: parseLinks(col.links ?? "") }));
     } else if (Array.isArray(current) && form.has(`${field}[]`)) {
       value[key] = form.getAll(`${field}[]`).map((v) => String(v).trim());
     } else if (form.has(field)) {
@@ -436,10 +442,49 @@ function sectionValue(section: EditableSection, form: FormData) {
   return value;
 }
 
+// "Label | /link" per line; a line without a link becomes a greyed-out item.
+function parseLinks(textValue: string) {
+  return textValue
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const at = line.lastIndexOf("|");
+      if (at < 0) return { label: line, href: null };
+      const href = line.slice(at + 1).trim();
+      return { label: line.slice(0, at).trim(), href: href || null };
+    })
+    .filter((link) => link.label);
+}
+
+const SOCIAL_KEYS = ["x", "discord", "youtube", "telegram", "instagram"];
+
+async function cleanSection(section: EditableSection, value: unknown, form: FormData) {
+  if (section === "nav") {
+    return (value as Record<string, string>[])
+      .filter((item) => item.label)
+      .map((item) => ({ label: item.label, href: item.href || null, ...(item.note ? { note: item.note } : {}) }));
+  }
+  const record = value as Record<string, unknown>;
+  if (section === "footer") {
+    for (const key of SOCIAL_KEYS) {
+      const url = String(record[key] ?? "");
+      if (url && !/^https?:\/\/\S+$/.test(url)) record[key] = "";
+    }
+  }
+  if (section === "brand") {
+    const current = (await getContent()).brand.logoUrl;
+    const file = form.get("brand.logoFile");
+    if (file instanceof File && file.size > 0) record.logoUrl = await saveImage(file, "site-logo");
+    else record.logoUrl = form.get("brand.removeLogo") === "on" ? "" : current;
+  }
+  return record;
+}
+
 function listValue(prefix: string, form: FormData) {
   const rows = new Map<number, Record<string, string>>();
   for (const [name, raw] of form.entries()) {
-    const match = name.match(new RegExp(`^${prefix.replace(".", "\\.")}\\.(\\d+)\\.(\\w+)$`));
+    const match = name.match(new RegExp(`^${prefix.replaceAll(".", "\\.")}\\.(\\d+)\\.(\\w+)$`));
     if (!match || typeof raw !== "string") continue;
     const row = rows.get(Number(match[1])) ?? {};
     row[match[2]] = raw.trim();
@@ -455,12 +500,67 @@ export async function saveSection(form: FormData) {
   await requireAdmin();
   const section = text(form, "section") as EditableSection | null;
   if (!section || !EDITABLE_SECTIONS.includes(section)) throw new Error("Unknown section");
+  const returnTo = text(form, "returnTo") === "/admin/site" ? "/admin/site" : "/admin/homepage";
   if (form.get("reset") === "on") {
     await db.siteSetting.deleteMany({ where: { key: section } });
   } else {
-    const value = sectionValue(section, form) as Prisma.InputJsonValue;
+    let value: Prisma.InputJsonValue;
+    try {
+      value = (await cleanSection(section, sectionValue(section, form), form)) as Prisma.InputJsonValue;
+    } catch (error) {
+      if (error instanceof UploadError) redirect(`${returnTo}?error=logo#${section}`);
+      throw error;
+    }
     await db.siteSetting.upsert({ where: { key: section }, create: { key: section, value }, update: { value } });
   }
   revalidatePath("/", "layout");
-  redirect(`/admin/homepage?saved=${section}#${section}`);
+  redirect(`${returnTo}?saved=${section}#${section}`);
+}
+
+// Pages
+
+export async function savePage(form: FormData) {
+  await requireAdmin();
+  const original = text(form, "original");
+  const slug = slugify(text(form, "slug") ?? text(form, "title") ?? "");
+  const isDefault = defaultPages.some((p) => p.slug === (original ?? slug));
+  // Default pages keep their address so footer links never break.
+  const finalSlug = isDefault ? (original ?? slug) : slug;
+  if (!finalSlug || RESERVED_SLUGS.includes(finalSlug)) redirect(`/admin/pages/${original ?? "new"}?error=slug`);
+  const taken = finalSlug !== original && (await listPages()).some((p) => p.slug === finalSlug);
+  if (taken) redirect(`/admin/pages/${original ?? "new"}?error=taken`);
+  const data = {
+    title: requiredText(form, "title"),
+    description: text(form, "description")?.slice(0, 300) ?? null,
+    body: text(form, "body") ?? "",
+    published: form.get("published") === "on",
+  };
+  if (original && original !== finalSlug) await db.page.deleteMany({ where: { slug: original } });
+  await db.page.upsert({ where: { slug: finalSlug }, create: { slug: finalSlug, ...data }, update: data });
+  revalidatePath("/", "layout");
+  redirect(`/admin/pages/${finalSlug}?saved=1`);
+}
+
+// Deleting a default page's row restores its default text.
+export async function deletePage(form: FormData) {
+  await requireAdmin();
+  const slug = requiredText(form, "slug");
+  await db.page.deleteMany({ where: { slug } });
+  revalidatePath("/", "layout");
+  const isDefault = defaultPages.some((p) => p.slug === slug);
+  redirect(isDefault ? `/admin/pages/${slug}?saved=reset` : "/admin/pages?saved=deleted");
+}
+
+// Contact messages
+
+export async function setMessageRead(id: string, read: boolean) {
+  await requireAdmin();
+  await db.contactMessage.update({ where: { id }, data: { read } });
+  revalidatePath("/admin", "layout");
+}
+
+export async function deleteMessage(id: string) {
+  await requireAdmin();
+  await db.contactMessage.delete({ where: { id } });
+  revalidatePath("/admin", "layout");
 }

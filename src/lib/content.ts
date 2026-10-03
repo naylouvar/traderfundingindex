@@ -8,6 +8,8 @@ import { site } from "@/content/site";
 
 export type SiteContent = typeof site;
 export const EDITABLE_SECTIONS = [
+  "brand",
+  "nav",
   "promoBar",
   "hero",
   "stats",
