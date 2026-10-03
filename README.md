@@ -21,7 +21,7 @@ npm run dev               # http://localhost:3000
 
 ## Editing site text
 
-All homepage, header and footer text (hero, FAQ, newsletter, footer links) lives in `src/content/site.ts`. Firm data, logos and offers are edited in the admin panel.
+Everything visible is editable in the admin panel: firms, logos, offers, reviews, homepage text (/admin/homepage), logo, menu and footer (/admin/site) and content pages like About, Contact and the legal pages (/admin/pages). `src/content/site.ts` and `src/content/pages.ts` hold the default text used until something is edited.
 
 ## Admin panel
 
