@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { site } from "@/content/site";
+import { getContent } from "@/lib/content";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const site = await getContent();
   return (
     <header>
       <div className="bg-accent px-4 py-2 text-center text-xs font-medium text-black">

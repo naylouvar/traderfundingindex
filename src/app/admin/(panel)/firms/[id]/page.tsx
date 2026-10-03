@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Plan, Rule } from "@prisma/client";
+import type { Rule } from "@prisma/client";
+import { PlanForm } from "../../../_components/plan-form";
+import { FirmLogo } from "@/components/firm-logo";
 import { db } from "@/lib/db";
 import { usd } from "@/lib/format";
 import {
@@ -10,7 +12,6 @@ import {
   deleteRule,
   markVerified,
   saveCountryRule,
-  savePlan,
   saveRule,
   updateFirm,
 } from "../../../actions";
@@ -21,7 +22,6 @@ import {
   TextArea,
   assetClassOptions,
   countryStatusOptions,
-  drawdownOptions,
   firmStatusOptions,
   ruleCategoryOptions,
   severityOptions,
@@ -39,6 +39,7 @@ const errorMessages: Record<string, string> = {
   slug: "Another firm already uses that URL slug.",
   confirm: 'Type "delete" to confirm deleting the firm.',
   country: "Use a two-letter country code, like US or FR.",
+  logo: "Logo must be a PNG, JPG, WebP or GIF image of 2 MB or less.",
 };
 
 export default async function EditFirmPage({ params, searchParams }: PageProps<"/admin/firms/[id]">) {
@@ -94,8 +95,27 @@ export default async function EditFirmPage({ params, searchParams }: PageProps<"
           <Field label="HQ country (2 letters)" name="hqCountry" defaultValue={firm.hqCountry} placeholder="US" />
           <Select label="Status" name="status" defaultValue={firm.status} options={firmStatusOptions} />
           <Select label="Asset class" name="assetClass" defaultValue={firm.assetClass} options={assetClassOptions} />
-          <Field label="Logo URL" name="logoUrl" type="url" defaultValue={firm.logoUrl} placeholder="https://…/logo.png" />
-          <div />
+          <div className="space-y-2 text-sm sm:col-span-2">
+            <span className="text-muted">Logo</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <FirmLogo name={firm.name} logoUrl={firm.logoUrl} size={56} />
+              <input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp,image/gif" className="text-sm" />
+              {firm.logoUrl && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" name="removeLogo" /> Remove logo
+                </label>
+              )}
+            </div>
+            <p className="text-xs text-muted">PNG, JPG, WebP or GIF, up to 2 MB. Square images look best.</p>
+            <input type="hidden" name="logoUrl" value={firm.logoUrl ?? ""} />
+          </div>
+          <Field label="Position on the homepage" name="sortOrder" type="number" defaultValue={firm.sortOrder} />
+          <Field
+            label="Editor rating (0 to 5, shown until reviews exist)"
+            name="editorRating"
+            defaultValue={firm.editorRating?.toString()}
+            placeholder="4.5"
+          />
           <TextArea label="Description" name="description" defaultValue={firm.description} className="sm:col-span-2" />
           <h3 className="pt-2 font-medium sm:col-span-2">Offer</h3>
           <Field label="Discount code" name="promoCode" defaultValue={firm.promoCode} />
@@ -192,36 +212,6 @@ export default async function EditFirmPage({ params, searchParams }: PageProps<"
         </form>
       </Section>
     </div>
-  );
-}
-
-function PlanForm({ firmId, plan }: { firmId: string; plan?: Plan }) {
-  return (
-    <form action={savePlan} className="grid gap-4 sm:grid-cols-3">
-      <input type="hidden" name="firmId" value={firmId} />
-      {plan && <input type="hidden" name="id" value={plan.id} />}
-      <Field label="Plan name" name="name" defaultValue={plan?.name} required placeholder="50K Combine" />
-      <Field label="Account size ($)" name="accountSizeUsd" type="number" defaultValue={plan?.accountSizeUsd} required />
-      <Select label="Asset class" name="assetClass" defaultValue={plan?.assetClass ?? "FUTURES"} options={assetClassOptions} />
-      <Field label="Price ($)" name="priceUsd" defaultValue={plan?.priceUsd?.toString()} />
-      <Field label="Activation fee ($)" name="activationFeeUsd" defaultValue={plan?.activationFeeUsd?.toString()} />
-      <Field label="Reset fee ($)" name="resetFeeUsd" defaultValue={plan?.resetFeeUsd?.toString()} />
-      <Field label="Data fee ($/month)" name="dataFeeUsd" defaultValue={plan?.dataFeeUsd?.toString()} />
-      <Field label="Profit target ($)" name="profitTargetUsd" type="number" defaultValue={plan?.profitTargetUsd} />
-      <Field label="Max drawdown ($)" name="maxDrawdownUsd" type="number" defaultValue={plan?.maxDrawdownUsd} />
-      <Field label="Daily loss limit ($)" name="dailyLossLimitUsd" type="number" defaultValue={plan?.dailyLossLimitUsd} />
-      <Select label="Drawdown type" name="drawdownType" defaultValue={plan?.drawdownType} options={drawdownOptions} allowEmpty />
-      <Field label="Max contracts" name="maxContracts" type="number" defaultValue={plan?.maxContracts} />
-      <Field label="Phases" name="phases" type="number" defaultValue={plan?.phases} />
-      <Field label="Min trading days" name="minTradingDays" type="number" defaultValue={plan?.minTradingDays} />
-      <Field label="Profit split (trader %)" name="profitSplitPct" type="number" defaultValue={plan?.profitSplitPct} />
-      <Field label="Payout frequency" name="payoutFrequency" defaultValue={plan?.payoutFrequency} placeholder="Every 5 trading days" />
-      <TextArea label="Scaling notes" name="scalingNotes" defaultValue={plan?.scalingNotes} className="sm:col-span-2" />
-      {plan && <Field label="Source of this change (optional)" name="sourceUrl" type="url" />}
-      <div className="sm:col-span-3">
-        <button className="btn-primary">{plan ? "Save plan" : "Add plan"}</button>
-      </div>
-    </form>
   );
 }
 

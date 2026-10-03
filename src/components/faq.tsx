@@ -1,6 +1,7 @@
-import { site } from "@/content/site";
+import { getContent } from "@/lib/content";
 
-export function Faq() {
+export async function Faq() {
+  const site = await getContent();
   return (
     <section id="faq" className="mx-auto max-w-3xl scroll-mt-6 space-y-6">
       <h2 className="text-center text-2xl font-semibold">{site.faq.title}</h2>

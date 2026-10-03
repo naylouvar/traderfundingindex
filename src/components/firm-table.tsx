@@ -45,7 +45,7 @@ export function FirmTable({ firms }: { firms: RankedFirm[] }) {
                 </Link>
               </td>
               <td className="px-4 py-4">
-                <Stars rating={firm.rating} count={firm.reviewCount} />
+                <Stars rating={firm.rating} count={firm.reviewCount} source={firm.ratingSource} />
               </td>
               <td className="px-4 py-4 text-muted">{firm.hqCountry ?? "—"}</td>
               <td className="px-4 py-4 text-muted">{firm.yearsInOperation ?? "—"}</td>

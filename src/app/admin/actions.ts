@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { EDITABLE_SECTIONS, type EditableSection } from "@/lib/content";
+import { saveImage, UploadError } from "@/lib/uploads";
+import { site } from "@/content/site";
 import { createSession, destroySession, passwordMatches, requireAdmin } from "@/lib/auth";
 import { date, decimal, int, oneOf, requiredText, slugify, text } from "@/lib/form";
 
@@ -25,6 +28,8 @@ const SEVERITIES = ["LOW", "MEDIUM", "HIGH"] as const;
 const COUNTRY_STATUSES = ["ALLOWED", "RESTRICTED", "BANNED"] as const;
 
 function refresh(slug?: string) {
+  revalidatePath("/admin", "layout");
+  revalidatePath("/");
   revalidatePath("/firms");
   if (slug) revalidatePath(`/firms/${slug}`);
 }
@@ -66,7 +71,25 @@ function firmData(form: FormData) {
     promoDiscountPct: int(form, "promoDiscountPct"),
     promoUrl: text(form, "promoUrl"),
     promoEndsAt: date(form, "promoEndsAt"),
+    sortOrder: int(form, "sortOrder") ?? 0,
+    editorRating: rating(form, "editorRating"),
   };
+}
+
+function rating(form: FormData, key: string) {
+  const value = text(form, key);
+  if (value === null) return null;
+  const parsed = Number(value.replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 5) throw new Error(`${key} must be between 0 and 5`);
+  return parsed.toFixed(1);
+}
+
+// Returns the new logo URL, null to clear it, or undefined to leave it as is.
+async function logoFromForm(form: FormData, slug: string) {
+  const file = form.get("logoFile");
+  if (file instanceof File && file.size > 0) return saveImage(file, slug);
+  if (form.get("removeLogo") === "on") return null;
+  return undefined;
 }
 
 function isDuplicateSlug(error: unknown) {
@@ -91,8 +114,16 @@ export async function updateFirm(form: FormData) {
   await requireAdmin();
   const id = requiredText(form, "id");
   const before = await db.firm.findUniqueOrThrow({ where: { id } });
+  const data = firmData(form);
   try {
-    const firm = await db.firm.update({ where: { id }, data: firmData(form) });
+    const logo = await logoFromForm(form, data.slug);
+    if (logo !== undefined) data.logoUrl = logo;
+  } catch (error) {
+    if (error instanceof UploadError) redirect(`/admin/firms/${id}?error=logo`);
+    throw error;
+  }
+  try {
+    const firm = await db.firm.update({ where: { id }, data });
     refresh(before.slug);
     refresh(firm.slug);
   } catch (error) {
@@ -180,7 +211,7 @@ export async function savePlan(form: FormData) {
     ]);
   }
   refresh(firm.slug);
-  redirect(`/admin/firms/${firmId}?saved=plan#plans`);
+  redirect(text(form, "returnTo") === "challenges" ? "/admin/challenges?saved=1" : `/admin/firms/${firmId}?saved=plan#plans`);
 }
 
 export async function deletePlan(form: FormData) {
@@ -273,3 +304,163 @@ export async function deleteCountryRule(form: FormData) {
   redirect(`/admin/firms/${rule.firmId}?saved=country#countries`);
 }
 
+
+// Firm order
+
+async function rankedIds() {
+  const firms = await db.firm.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true } });
+  return firms.map((f) => f.id);
+}
+
+async function writeOrder(ids: string[]) {
+  await db.$transaction(ids.map((id, i) => db.firm.update({ where: { id }, data: { sortOrder: i + 1 } })));
+  refresh();
+}
+
+export async function saveFirmOrder(form: FormData) {
+  await requireAdmin();
+  const ids = await rankedIds();
+  const position = (id: string) => int(form, `order_${id}`) ?? ids.indexOf(id) + 1;
+  // On a tie, the firm whose position was just changed takes the spot.
+  const moved = (id: string) => (position(id) !== ids.indexOf(id) + 1 ? 0 : 1);
+  const sorted = [...ids].sort(
+    (a, b) => position(a) - position(b) || moved(a) - moved(b) || ids.indexOf(a) - ids.indexOf(b),
+  );
+  await writeOrder(sorted);
+  redirect("/admin?saved=order");
+}
+
+export async function moveFirm(id: string, direction: "up" | "down") {
+  await requireAdmin();
+  const ids = await rankedIds();
+  const i = ids.indexOf(id);
+  const j = direction === "up" ? i - 1 : i + 1;
+  if (i >= 0 && j >= 0 && j < ids.length) [ids[i], ids[j]] = [ids[j], ids[i]];
+  await writeOrder(ids);
+  redirect("/admin?saved=order");
+}
+
+// Offers
+
+export async function saveOffer(form: FormData) {
+  await requireAdmin();
+  const id = requiredText(form, "id");
+  const firm = await db.firm.update({
+    where: { id },
+    data: {
+      promoCode: text(form, "promoCode"),
+      promoDiscountPct: int(form, "promoDiscountPct"),
+      promoUrl: text(form, "promoUrl"),
+      promoEndsAt: date(form, "promoEndsAt"),
+      featured: form.get("featured") === "on",
+    },
+  });
+  refresh(firm.slug);
+  redirect("/admin/offers?saved=1");
+}
+
+// Reviews
+
+const OUTCOMES = ["FAILED", "PASSED", "PAID", "DENIED"] as const;
+const MODERATION = ["PENDING", "APPROVED", "REJECTED"] as const;
+
+function score(form: FormData, key: string) {
+  const value = int(form, key);
+  if (value === null) return null;
+  if (value < 1 || value > 5) throw new Error(`${key} must be 1 to 5`);
+  return value;
+}
+
+export async function saveReview(form: FormData) {
+  await requireAdmin();
+  const id = text(form, "id");
+  const overall = score(form, "overall");
+  if (overall === null) throw new Error("overall is required");
+  const data = {
+    firmId: requiredText(form, "firmId"),
+    planId: text(form, "planId"),
+    authorName: text(form, "authorName"),
+    title: text(form, "title"),
+    outcome: oneOf(form, "outcome", OUTCOMES) ?? "PASSED",
+    overall,
+    payoutReliability: score(form, "payoutReliability"),
+    ruleFairness: score(form, "ruleFairness"),
+    support: score(form, "support"),
+    transparency: score(form, "transparency"),
+    body: requiredText(form, "body"),
+    verified: form.get("verified") === "on",
+    moderation: oneOf(form, "moderation", MODERATION) ?? "APPROVED",
+  };
+  const review = id
+    ? await db.review.update({ where: { id }, data, include: { firm: true } })
+    : await db.review.create({ data, include: { firm: true } });
+  refresh(review.firm.slug);
+  redirect(`/admin/reviews?saved=1`);
+}
+
+export async function setReviewStatus(form: FormData) {
+  await requireAdmin();
+  const id = requiredText(form, "id");
+  const moderation = oneOf(form, "moderation", MODERATION) ?? "PENDING";
+  const review = await db.review.update({ where: { id }, data: { moderation }, include: { firm: true } });
+  refresh(review.firm.slug);
+  redirect(`/admin/reviews?saved=1&status=${text(form, "filter") ?? ""}`);
+}
+
+export async function deleteReview(form: FormData) {
+  await requireAdmin();
+  const id = requiredText(form, "id");
+  const review = await db.review.delete({ where: { id }, include: { firm: true } });
+  refresh(review.firm.slug);
+  redirect("/admin/reviews?saved=1");
+}
+
+// Homepage text. Each field is named "<section>.<key>"; list sections (pillars,
+// faq) use "<section>.<index>.<key>" and drop rows left empty.
+
+function sectionValue(section: EditableSection, form: FormData) {
+  const base = site[section];
+  if (Array.isArray(base)) return listValue(section, form);
+  const value: Record<string, unknown> = {};
+  for (const key of Object.keys(base)) {
+    const field = `${section}.${key}`;
+    const current = (base as Record<string, unknown>)[key];
+    if (key === "items" && section === "faq") {
+      value.items = listValue("faq.items", form);
+    } else if (Array.isArray(current) && form.has(`${field}[]`)) {
+      value[key] = form.getAll(`${field}[]`).map((v) => String(v).trim());
+    } else if (form.has(field)) {
+      value[key] = String(form.get(field) ?? "").trim();
+    }
+  }
+  return value;
+}
+
+function listValue(prefix: string, form: FormData) {
+  const rows = new Map<number, Record<string, string>>();
+  for (const [name, raw] of form.entries()) {
+    const match = name.match(new RegExp(`^${prefix.replace(".", "\\.")}\\.(\\d+)\\.(\\w+)$`));
+    if (!match || typeof raw !== "string") continue;
+    const row = rows.get(Number(match[1])) ?? {};
+    row[match[2]] = raw.trim();
+    rows.set(Number(match[1]), row);
+  }
+  return [...rows.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, row]) => row)
+    .filter((row) => Object.values(row).some(Boolean));
+}
+
+export async function saveSection(form: FormData) {
+  await requireAdmin();
+  const section = text(form, "section") as EditableSection | null;
+  if (!section || !EDITABLE_SECTIONS.includes(section)) throw new Error("Unknown section");
+  if (form.get("reset") === "on") {
+    await db.siteSetting.deleteMany({ where: { key: section } });
+  } else {
+    const value = sectionValue(section, form) as Prisma.InputJsonValue;
+    await db.siteSetting.upsert({ where: { key: section }, create: { key: section, value }, update: { value } });
+  }
+  revalidatePath("/", "layout");
+  redirect(`/admin/homepage?saved=${section}#${section}`);
+}

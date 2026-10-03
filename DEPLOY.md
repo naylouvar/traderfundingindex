@@ -116,6 +116,8 @@ npm run build
 pm2 restart traderfundingindex
 ```
 
+Logos uploaded in the admin panel are saved in the `uploads` folder inside the site folder. `git pull` never touches it, so keep it when you move or rebuild the site, and include it in backups.
+
 ## Troubleshooting
 
 - **The site shows a 502 error:** the app is not running. Check `pm2 status` and `pm2 logs traderfundingindex`.

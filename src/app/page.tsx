@@ -1,22 +1,30 @@
 import Link from "next/link";
+import { ChallengesTable } from "@/components/challenges-table";
 import { Faq } from "@/components/faq";
 import { FirmTable } from "@/components/firm-table";
 import { Newsletter } from "@/components/newsletter";
 import { OfferCard } from "@/components/offer-card";
-import { site } from "@/content/site";
-import { getRankedFirms, getSiteStats, hasActiveOffer } from "@/lib/firms";
+import { ReviewList } from "@/components/review-list";
+import { getContent } from "@/lib/content";
+import { getApprovedReviews, getChallenges, getRankedFirms, getSiteStats, hasActiveOffer } from "@/lib/firms";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const [firms, stats] = await Promise.all([getRankedFirms(), getSiteStats()]);
-  const offers = firms.filter((f) => f.featured && hasActiveOffer(f));
+const TABS = ["firms", "challenges", "offers", "reviews"] as const;
+type Tab = (typeof TABS)[number];
+
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const { tab: tabParam } = await searchParams;
+  const tab: Tab = TABS.includes(tabParam as Tab) ? (tabParam as Tab) : "firms";
+  const [site, firms, stats] = await Promise.all([getContent(), getRankedFirms(), getSiteStats()]);
+  const featuredOffers = firms.filter((f) => f.featured && hasActiveOffer(f));
+  const allOffers = firms.filter((f) => hasActiveOffer(f));
   const statBadges = [
-    { value: stats.firms, label: "futures firms tracked" },
-    { value: stats.reviews, label: "verified reviews" },
-    { value: stats.payouts, label: "payout reports" },
-    { value: stats.rules, label: "hidden rules exposed" },
-  ];
+    { value: stats.firms, label: site.stats.firms },
+    { value: stats.reviews, label: site.stats.reviews },
+    { value: stats.payouts, label: site.stats.payouts },
+    { value: stats.rules, label: site.stats.rules },
+  ].filter((s) => s.label);
 
   return (
     <div className="space-y-16">
@@ -33,62 +41,84 @@ export default async function Home() {
       </section>
 
       <section id="offers" className="scroll-mt-6 space-y-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold">{site.offers.title}</h2>
-            <p className="text-sm text-muted">{site.offers.subtitle}</p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold">{site.offers.title}</h2>
+          <p className="text-sm text-muted">{site.offers.subtitle}</p>
         </div>
-        {offers.length === 0 ? (
+        {featuredOffers.length === 0 ? (
           <p className="text-sm text-muted">{site.offers.empty}</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {offers.map((firm) => (
+            {featuredOffers.map((firm) => (
               <OfferCard key={firm.id} firm={firm} />
             ))}
           </div>
         )}
       </section>
 
-      <section className="space-y-4">
+      <section id="rankings" className="scroll-mt-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-1 rounded-lg border border-white/10 p-1 text-sm">
-            {site.table.tabs.map((tab, i) => (
-              <span
-                key={tab}
-                className={i === 0 ? "rounded-md bg-accent px-3 py-1 font-semibold text-black" : "px-3 py-1 text-muted/60"}
-                title={i === 0 ? undefined : "Coming soon"}
+          <nav className="flex gap-1 rounded-lg border border-white/10 p-1 text-sm">
+            {TABS.map((t, i) => (
+              <Link
+                key={t}
+                href={t === "firms" ? "/#rankings" : `/?tab=${t}#rankings`}
+                scroll={false}
+                className={
+                  t === tab
+                    ? "rounded-md bg-accent px-3 py-1 font-semibold text-black"
+                    : "rounded-md px-3 py-1 text-muted hover:text-foreground"
+                }
               >
-                {tab}
-              </span>
+                {site.table.tabs[i] ?? t}
+              </Link>
             ))}
-          </div>
+          </nav>
           <Link href={site.table.methodHref} className="text-sm text-muted underline hover:text-foreground">
             {site.table.method}
           </Link>
         </div>
         <h2 className="sr-only">{site.table.title}</h2>
-        <FirmTable firms={firms.slice(0, 20)} />
-        {firms.length > 20 && (
-          <div className="text-center">
-            <Link href="/firms" className="btn-secondary">
-              View all firms
-            </Link>
-          </div>
+
+        {tab === "firms" && (
+          <>
+            <FirmTable firms={firms.slice(0, 20)} />
+            {firms.length > 20 && (
+              <div className="text-center">
+                <Link href="/firms" className="btn-secondary">
+                  View all firms
+                </Link>
+              </div>
+            )}
+          </>
         )}
+        {tab === "challenges" && <ChallengesTable challenges={await getChallenges()} />}
+        {tab === "offers" &&
+          (allOffers.length === 0 ? (
+            <p className="rounded-xl border border-white/10 p-8 text-center text-muted">{site.offers.empty}</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {allOffers.map((firm) => (
+                <OfferCard key={firm.id} firm={firm} />
+              ))}
+            </div>
+          ))}
+        {tab === "reviews" && <ReviewList reviews={await getApprovedReviews()} />}
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {site.pillars.map((p) => (
-          <div key={p.title} className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-            <h3 className="font-semibold">{p.title}</h3>
-            <p className="mt-2 text-sm text-muted">{p.body}</p>
-          </div>
-        ))}
+        {site.pillars
+          .filter((p) => p.title)
+          .map((p) => (
+            <div key={p.title} className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+              <h3 className="font-semibold">{p.title}</h3>
+              <p className="mt-2 text-sm text-muted">{p.body}</p>
+            </div>
+          ))}
       </section>
 
       <Faq />
-      <Newsletter />
+      <Newsletter copy={site.newsletter} />
     </div>
   );
 }

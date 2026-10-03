@@ -26,6 +26,12 @@ export const site = {
     subtitle:
       "Real profit splits, hidden rules, payout reports and banned countries. Independent rankings, never paid for.",
   },
+  stats: {
+    firms: "futures firms tracked",
+    reviews: "verified reviews",
+    payouts: "payout reports",
+    rules: "hidden rules exposed",
+  },
   offers: {
     title: "Current offers",
     subtitle: "Discount codes from the firms we track. Partner links are always labelled.",
