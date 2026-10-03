@@ -1,8 +1,16 @@
 // All homepage and footer text lives here so it can be edited without
 // touching the page code. Firm data itself is managed in /admin.
 
+type Link = { label: string; href: string | null };
+type NavItem = { label: string; href: string | null; note?: string };
+
 export const site = {
   name: "TraderFundingIndex",
+  brand: {
+    name: "TraderFundingIndex",
+    accent: "Funding",
+    logoUrl: "",
+  },
   promoBar: {
     text: "Every rule, fee and payout, checked by traders who bought the challenges.",
     linkLabel: "See the firms",
@@ -15,7 +23,7 @@ export const site = {
     { label: "Hidden rules", href: "/firms#rules" },
     { label: "Forum", href: null, note: "Soon" },
     { label: "Strategies", href: null, note: "Soon" },
-  ],
+  ] as NavItem[],
   assetTabs: [
     { label: "Futures", active: true },
     { label: "Forex", active: false },
@@ -41,7 +49,7 @@ export const site = {
     title: "Futures prop firm rankings",
     tabs: ["Firms", "Challenges", "Offers", "Reviews"],
     method: "How we rank firms",
-    methodHref: "/#faq",
+    methodHref: "/how-we-rank",
   },
   pillars: [
     {
@@ -98,9 +106,14 @@ export const site = {
     thanks: "Thanks, you're subscribed.",
   },
   footer: {
-    tagline: "The honest index of futures prop firms.",
+    tagline: "The honest index of futures prop firms. Real payouts, hidden rules and banned countries, checked by traders.",
     disclaimer:
-      "Reviews are traders' own experiences. Rankings are never paid for. Trading futures involves substantial risk of loss.",
+      "Reviews are traders' own experiences. Rankings are never paid for. Trading futures involves substantial risk of loss and is not suitable for every investor. Nothing on this site is financial advice.",
+    x: "",
+    discord: "",
+    youtube: "",
+    telegram: "",
+    instagram: "",
     columns: [
       {
         title: "Compare",
@@ -115,16 +128,27 @@ export const site = {
         links: [
           { label: "Forum (soon)", href: null },
           { label: "Strategies (soon)", href: null },
-          { label: "Write a review (soon)", href: null },
+          { label: "Review guidelines", href: "/review-guidelines" },
         ],
       },
       {
-        title: "About",
+        title: "Company",
         links: [
-          { label: "How we rank firms", href: "/#faq" },
-          { label: "FAQ", href: "/#faq" },
+          { label: "About us", href: "/about" },
+          { label: "How we rank firms", href: "/how-we-rank" },
+          { label: "Affiliate disclosure", href: "/affiliate-disclosure" },
+          { label: "Contact", href: "/contact" },
         ],
       },
-    ],
+      {
+        title: "Legal",
+        links: [
+          { label: "Terms of use", href: "/terms" },
+          { label: "Privacy policy", href: "/privacy" },
+          { label: "Cookie policy", href: "/cookies" },
+          { label: "Risk disclosure", href: "/risk-disclosure" },
+        ],
+      },
+    ] as { title: string; links: Link[] }[],
   },
 };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { logout } from "../actions";
 
 const adminNav = [
@@ -9,6 +10,9 @@ const adminNav = [
   { label: "Offers", href: "/admin/offers" },
   { label: "Reviews", href: "/admin/reviews" },
   { label: "Homepage", href: "/admin/homepage" },
+  { label: "Header & footer", href: "/admin/site" },
+  { label: "Pages", href: "/admin/pages" },
+  { label: "Messages", href: "/admin/messages" },
   { label: "Subscribers", href: "/admin/subscribers" },
 ];
 
@@ -16,6 +20,7 @@ export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   await requireAdmin();
+  const unread = await db.contactMessage.count({ where: { read: false } });
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -26,6 +31,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           {adminNav.map((item) => (
             <Link key={item.href} href={item.href} className="text-muted hover:text-foreground">
               {item.label}
+              {item.href === "/admin/messages" && unread > 0 && (
+                <span className="ml-1 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-black">{unread}</span>
+              )}
             </Link>
           ))}
         </nav>

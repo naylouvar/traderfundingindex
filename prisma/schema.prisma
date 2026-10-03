@@ -322,3 +322,25 @@ model SiteSetting {
   value     Json
   updatedAt DateTime @updatedAt
 }
+
+// Admin-edited content pages (about, legal, contact...). Default pages live in
+// src/content/pages.ts; a row here overrides a default or adds a new page.
+model Page {
+  slug        String   @id
+  title       String
+  description String?  @db.VarChar(300)
+  body        String   @db.Text
+  published   Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+// Messages sent from the contact page, read in /admin/messages.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
