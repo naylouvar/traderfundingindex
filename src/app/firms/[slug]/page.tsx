@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { ReviewList } from "@/components/review-list";
 import { db } from "@/lib/db";
+import { FinePrintCard } from "@/components/fine-print-card";
+import { Markdown } from "@/components/markdown";
 import { drawdownLabel, usd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +19,7 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
     where: { slug },
     include: {
       plans: { orderBy: { accountSizeUsd: "asc" } },
-      rules: { orderBy: { severity: "desc" } },
+      rules: { orderBy: [{ severity: "desc" }, { createdAt: "asc" }] },
       countryRules: { where: { status: { not: "ALLOWED" } } },
       reviews: {
         where: { moderation: "APPROVED" },
@@ -27,6 +29,8 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
     },
   });
   if (!firm) notFound();
+  const finePrint = firm.rules.filter((r) => r.hidden);
+  const rules = firm.rules.filter((r) => !r.hidden);
 
   return (
     <div className="space-y-10">
@@ -86,20 +90,35 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
         )}
       </section>
 
+      {finePrint.length > 0 && (
+        <section id="fine-print" className="scroll-mt-6 space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold">The fine print</h2>
+            <p className="text-sm text-muted">
+              Rules we found buried in {firm.name}&apos;s help articles and terms, with what they mean for your payouts.
+            </p>
+          </div>
+          {finePrint.map((r) => (
+            <FinePrintCard key={r.id} rule={r} />
+          ))}
+        </section>
+      )}
+
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Rules to know</h2>
-        {firm.rules.length === 0 ? (
-          <p className="text-muted">No rules documented yet.</p>
+        <h2 className="text-xl font-semibold">{finePrint.length > 0 ? "Other rules to know" : "Rules to know"}</h2>
+        {rules.length === 0 ? (
+          <p className="text-muted">{finePrint.length > 0 ? "Nothing else documented yet." : "No rules documented yet."}</p>
         ) : (
           <ul className="space-y-2">
-            {firm.rules.map((r) => (
+            {rules.map((r) => (
               <li key={r.id} className="rounded-lg border border-white/10 p-4 text-sm">
-                {r.hidden && (
-                  <span className="mr-2 rounded bg-accent/20 px-1.5 py-0.5 text-xs text-accent">
-                    Hidden
-                  </span>
-                )}
+                {r.title && <strong className="mr-2">{r.title}.</strong>}
                 {r.text}
+                {r.impact && (
+                  <div className="mt-2 text-muted">
+                    <Markdown source={r.impact} />
+                  </div>
+                )}
                 {r.sourceUrl && (
                   <a href={r.sourceUrl} rel="nofollow noopener" className="ml-2 text-muted underline">
                     source

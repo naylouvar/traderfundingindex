@@ -158,7 +158,11 @@ export default async function EditFirmPage({ params, searchParams }: PageProps<"
         </details>
       </Section>
 
-      <Section id="rules" title={`Rules (${firm.rules.length})`}>
+      <Section id="rules" title={`Rules and fine print (${firm.rules.length})`}>
+        <p className="text-sm text-muted">
+          Tick &quot;Fine print&quot; for rules buried in help articles or terms. They get their own section at the top of
+          the firm page, with your &quot;what it really means&quot; breakdown under the firm&apos;s wording.
+        </p>
         {firm.rules.map((rule) => (
           <div key={rule.id} className="space-y-3 rounded-md border border-white/10 p-4">
             <RuleForm firmId={firm.id} rule={rule} planOptions={planOptions} />
@@ -231,11 +235,31 @@ function RuleForm({
       <Select label="Category" name="category" defaultValue={rule?.category ?? "OTHER"} options={ruleCategoryOptions} />
       <Select label="Severity" name="severity" defaultValue={rule?.severity ?? "MEDIUM"} options={severityOptions} />
       <Select label="Applies to plan" name="planId" defaultValue={rule?.planId} options={planOptions} allowEmpty />
-      <TextArea label="Rule" name="text" defaultValue={rule?.text} required className="sm:col-span-3" />
+      <Field
+        label="Headline (shown in bold on the firm page)"
+        name="title"
+        defaultValue={rule?.title}
+        placeholder="The $150K buffer is bigger than the max payout"
+        className="sm:col-span-3"
+      />
+      <TextArea
+        label="What the terms say"
+        name="text"
+        defaultValue={rule?.text}
+        required
+        className="sm:col-span-3"
+      />
+      <TextArea
+        label="What it really means for traders (optional, Markdown: **bold**, - lists)"
+        name="impact"
+        defaultValue={rule?.impact}
+        rows={6}
+        className="sm:col-span-3"
+      />
       <Field label="Source URL" name="sourceUrl" type="url" defaultValue={rule?.sourceUrl} className="sm:col-span-2" />
       <label className="flex items-center gap-2 self-end pb-2 text-sm">
         <input type="checkbox" name="hidden" defaultChecked={rule?.hidden} />
-        Hidden rule (buried in the terms)
+        Fine print (buried in the terms, shown first)
       </label>
       <div className="sm:col-span-3">
         <button className="btn-primary">{rule ? "Save rule" : "Add rule"}</button>

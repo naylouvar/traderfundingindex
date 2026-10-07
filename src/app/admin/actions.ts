@@ -234,7 +234,9 @@ export async function saveRule(form: FormData) {
     planId: text(form, "planId"),
     category: oneOf(form, "category", RULE_CATEGORIES) ?? "OTHER",
     severity: oneOf(form, "severity", SEVERITIES) ?? "MEDIUM",
+    title: text(form, "title"),
     text: requiredText(form, "text"),
+    impact: text(form, "impact"),
     hidden: form.get("hidden") === "on",
     sourceUrl: text(form, "sourceUrl"),
   };
