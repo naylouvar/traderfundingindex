@@ -1,4 +1,4 @@
-import type { DrawdownType } from "@prisma/client";
+import type { DrawdownType, RuleCategory } from "@prisma/client";
 
 export function usd(value: number | { toString(): string } | null | undefined) {
   if (value === null || value === undefined) return "—";
@@ -9,6 +9,18 @@ export const drawdownLabel: Record<DrawdownType, string> = {
   END_OF_DAY_TRAILING: "End-of-day trailing",
   INTRADAY_TRAILING: "Intraday trailing",
   STATIC: "Static",
+};
+
+export const ruleCategoryLabel: Record<RuleCategory, string> = {
+  NEWS: "News trading",
+  CONSISTENCY: "Consistency",
+  CONTRACT_LIMIT: "Contract limit",
+  TRADING_HOURS: "Trading hours",
+  OVERNIGHT: "Overnight / weekend",
+  AUTOMATION: "Automation / bots",
+  IP_VPN: "IP / VPN",
+  PAYOUT: "Payout",
+  OTHER: "Other",
 };
 
 export function compactUsd(value: number | null | undefined) {

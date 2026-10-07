@@ -20,7 +20,7 @@ export const site = {
     { label: "Home", href: "/" },
     { label: "Firms", href: "/firms" },
     { label: "Offers", href: "/#offers" },
-    { label: "Hidden rules", href: "/firms#rules" },
+    { label: "Hidden rules", href: "/fine-print" },
     { label: "Forum", href: null, note: "Soon" },
     { label: "Strategies", href: null, note: "Soon" },
   ] as NavItem[],
@@ -120,7 +120,7 @@ export const site = {
         links: [
           { label: "All prop firms", href: "/firms" },
           { label: "Current offers", href: "/#offers" },
-          { label: "Hidden rules", href: "/firms#rules" },
+          { label: "Hidden rules", href: "/fine-print" },
         ],
       },
       {

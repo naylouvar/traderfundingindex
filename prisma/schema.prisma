@@ -148,7 +148,9 @@ model Rule {
   planId    String?
   plan      Plan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
   category  RuleCategory
-  text      String       @db.Text
+  title     String? // short headline, e.g. "The $150K buffer is bigger than the max payout"
+  text      String       @db.Text // what the firm's terms actually say
+  impact    String?      @db.Text // what it really costs the trader (Markdown), shown under "What it really means"
   severity  Severity     @default(MEDIUM)
   hidden    Boolean      @default(false) // buried in the terms rather than on the pricing page
   sourceUrl String?

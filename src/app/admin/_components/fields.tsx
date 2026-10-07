@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ruleCategoryLabel } from "@/lib/format";
 
 type InputProps = {
   label: string;
@@ -26,7 +27,15 @@ export function Field({ label, name, defaultValue, type = "text", required, plac
   );
 }
 
-export function TextArea({ label, name, defaultValue, required, placeholder, className }: InputProps) {
+export function TextArea({
+  label,
+  name,
+  defaultValue,
+  required,
+  placeholder,
+  className,
+  rows = 3,
+}: InputProps & { rows?: number }) {
   return (
     <label className={`block space-y-1 text-sm ${className ?? ""}`}>
       <span className="text-muted">{label}</span>
@@ -35,7 +44,7 @@ export function TextArea({ label, name, defaultValue, required, placeholder, cla
         required={required}
         placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
-        rows={3}
+        rows={rows}
         className="input"
       />
     </label>
@@ -88,16 +97,6 @@ export const drawdownOptions = {
   INTRADAY_TRAILING: "Intraday trailing",
   STATIC: "Static",
 };
-export const ruleCategoryOptions = {
-  NEWS: "News trading",
-  CONSISTENCY: "Consistency",
-  CONTRACT_LIMIT: "Contract limit",
-  TRADING_HOURS: "Trading hours",
-  OVERNIGHT: "Overnight / weekend",
-  AUTOMATION: "Automation / bots",
-  IP_VPN: "IP / VPN",
-  PAYOUT: "Payout",
-  OTHER: "Other",
-};
+export const ruleCategoryOptions = ruleCategoryLabel;
 export const severityOptions = { LOW: "Low", MEDIUM: "Medium", HIGH: "High" };
 export const countryStatusOptions = { BANNED: "Banned", RESTRICTED: "Restricted", ALLOWED: "Allowed" };
