@@ -16,7 +16,7 @@ cp .env.example .env      # fill in DATABASE_URL
 npm install
 npm run db:push           # create tables
 npm run db:seed           # add the seed firms
-npm run db:payout-rules   # add payout rules for 23 futures firms (checked 7 Oct 2026)
+npm run db:payout-rules   # add payout rules and platforms for 25 futures firms
 npm run dev               # http://localhost:3000
 ```
 
@@ -26,7 +26,7 @@ Everything visible is editable in the admin panel: firms, logos, offers, reviews
 
 ## Payout rules
 
-`prisma/data/payout-rules-2026-10-07.json` holds the funded-account and payout rules of 23 futures firms (PropFirmMatch, checked 7 Oct 2026). `npm run db:payout-rules` adds them, creating any missing firm at the bottom of the ranking. Firms that already have payout rules are left alone so admin edits survive; `node prisma/import-payout-rules.mjs --force` overwrites them. They show on each firm page, on `/payout-rules` (with a country check), and are edited under "Funded account and payout rules" in the admin firm editor.
+`prisma/data/payout-rules-YYYY-MM-DD.json` holds the funded-account and payout rules and trading platforms of futures firms (PropFirmMatch plus firm help centers, checked 7 to 8 Oct 2026). `npm run db:payout-rules` imports the newest file: missing firms are created at the bottom of the ranking, and on firms that already have payout rules each field is only updated if it is empty or still holds a value from an earlier file, so admin edits survive. A firm's platform list is filled only when empty. `node prisma/import-payout-rules.mjs --force` overwrites everything. Keep older data files: they are how the import tells imported values from admin edits. The rules show on each firm page, on `/payout-rules` (with country and platform checks), and are edited under "Funded account and payout rules" in the admin firm editor.
 
 ## Admin panel
 

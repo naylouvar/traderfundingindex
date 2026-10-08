@@ -88,7 +88,7 @@ model Firm {
   hqCountry        String?    @db.Char(2)
   assetClass       AssetClass @default(FUTURES)
   status           FirmStatus @default(ACTIVE)
-  platforms        String? // e.g. "Tradovate, Rithmic, NinjaTrader"
+  platforms        String?    @db.Text // e.g. "Tradovate, Rithmic, NinjaTrader"
   logoUrl          String?
   featured         Boolean    @default(false) // shown in the homepage offers strip
   promoCode        String?
@@ -189,6 +189,7 @@ model PayoutRules {
   firm                   Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
   plansCovered           String?  @db.Text
   accountSizes           String?  @db.Text
+  platforms              String?  @db.Text // as the source lists them; Firm.platforms holds the clean list
   minPayout              String?  @db.Text
   consistency            String?  @db.Text // funded stage: largest day as a % of total profit
   threshold              String?  @db.Text // profit, buffer or balance needed before a payout
