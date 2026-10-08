@@ -17,6 +17,7 @@
 }
 
 html {
+  color-scheme: dark; /* native controls (select lists, scrollbars, date pickers) use dark colors */
   scroll-padding-top: 6rem; /* keep anchors clear of the sticky header */
 }
 
@@ -26,6 +27,13 @@ body {
   background-repeat: no-repeat;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Native dropdown lists ignore the select's translucent background, so give options solid colors */
+select option,
+select optgroup {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 ::selection {
