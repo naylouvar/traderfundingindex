@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Futures prop firm payout rules compared" };
 
 const columns: { key: PayoutRuleField; label: string }[] = [
+  { key: "platforms", label: "Trading platforms" },
   { key: "minPayout", label: "Minimum payout" },
   { key: "consistency", label: "Consistency (funded)" },
   { key: "threshold", label: "Buffer or profit before payout" },
@@ -19,7 +20,7 @@ const columns: { key: PayoutRuleField; label: string }[] = [
   { key: "multipleAccounts", label: "Funded accounts" },
 ];
 
-function countryList(value: string | null) {
+function splitList(value: string | null) {
   return (value ?? "")
     .split(",")
     .map((c) => c.trim())
@@ -27,8 +28,9 @@ function countryList(value: string | null) {
 }
 
 export default async function PayoutRulesPage({ searchParams }: PageProps<"/payout-rules">) {
-  const { country } = await searchParams;
+  const { country, platform } = await searchParams;
   const query = typeof country === "string" ? country.trim().slice(0, 60) : "";
+  const platformQuery = typeof platform === "string" ? platform.trim().slice(0, 60) : "";
   const firms = await db.firm.findMany({
     where: { assetClass: "FUTURES", status: { not: "CLOSED" }, payoutRules: { isNot: null } },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -37,8 +39,15 @@ export default async function PayoutRulesPage({ searchParams }: PageProps<"/payo
 
   const needle = query.toLowerCase();
   const restricting = query
-    ? firms.filter((f) => countryList(f.payoutRules!.restrictedCountries).some((c) => c.toLowerCase() === needle))
+    ? firms.filter((f) => splitList(f.payoutRules!.restrictedCountries).some((c) => c.toLowerCase() === needle))
     : [];
+  // Platform filter uses each firm's clean platform list (edited in the firm details).
+  const platformOptions = [...new Set(firms.flatMap((f) => splitList(f.platforms)))].sort((a, b) =>
+    a.localeCompare(b, "en", { sensitivity: "base" }),
+  );
+  const supporting = platformQuery
+    ? firms.filter((f) => splitList(f.platforms).some((p) => p.toLowerCase() === platformQuery.toLowerCase()))
+    : firms;
   const dates = [...new Set(firms.map((f) => checkedLabel(f.payoutRules!)).filter(Boolean))];
 
   return (
@@ -56,16 +65,24 @@ export default async function PayoutRulesPage({ searchParams }: PageProps<"/payo
       </header>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Which firms accept traders from your country?</h2>
-        <form className="flex max-w-md gap-2">
+        <h2 className="text-xl font-semibold">Which firms fit your country and platform?</h2>
+        <form className="flex max-w-2xl flex-wrap gap-2">
           <input
             name="country"
             type="search"
             defaultValue={query}
             placeholder="Country name, e.g. Morocco"
             aria-label="Country"
-            className="input"
+            className="input min-w-48 flex-1"
           />
+          <select name="platform" defaultValue={platformQuery} aria-label="Trading platform" className="input min-w-48 flex-1">
+            <option value="">Any platform</option>
+            {platformOptions.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
           <button className="btn-secondary">Check</button>
         </form>
         {query && (
@@ -82,13 +99,22 @@ export default async function PayoutRulesPage({ searchParams }: PageProps<"/payo
             )}
           </p>
         )}
+        {platformQuery && (
+          <p className="text-sm">
+            <strong>
+              {supporting.length} of {firms.length} firms
+            </strong>{" "}
+            list {platformQuery}
+            {supporting.length > 0 && `: ${supporting.map((f) => f.name).join(", ")}`}.
+          </p>
+        )}
       </section>
 
       {firms.length === 0 ? (
         <p className="text-muted">No payout rules published yet.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-white/10">
-          <table className="w-full min-w-[1400px] text-left align-top text-sm">
+          <table className="w-full min-w-[1600px] text-left align-top text-sm">
             <thead className="bg-white/5 text-muted">
               <tr>
                 <th className="sticky left-0 bg-background px-4 py-3 font-medium">Firm</th>
@@ -103,9 +129,9 @@ export default async function PayoutRulesPage({ searchParams }: PageProps<"/payo
             <tbody>
               {firms.map((firm) => {
                 const rules = firm.payoutRules!;
-                const restricted = restricting.includes(firm);
+                const ruledOut = restricting.includes(firm) || !supporting.includes(firm);
                 return (
-                  <tr key={firm.id} className={`border-t border-white/10 ${restricted ? "opacity-50" : ""}`}>
+                  <tr key={firm.id} className={`border-t border-white/10 ${ruledOut ? "opacity-50" : ""}`}>
                     <td className="sticky left-0 bg-background px-4 py-3 align-top">
                       <Link
                         href={`/firms/${firm.slug}#payout-rules`}

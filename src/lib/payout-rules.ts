@@ -7,6 +7,7 @@ export type PayoutRuleField = keyof Pick<
   PayoutRules,
   | "plansCovered"
   | "accountSizes"
+  | "platforms"
   | "minPayout"
   | "consistency"
   | "threshold"
@@ -22,6 +23,7 @@ export type PayoutRuleField = keyof Pick<
 export const payoutRuleFields: { key: PayoutRuleField; label: string; hint?: string }[] = [
   { key: "plansCovered", label: "Funded plans covered" },
   { key: "accountSizes", label: "Account sizes" },
+  { key: "platforms", label: "Trading platforms", hint: "ATAS means ATAS Orderflow Trading." },
   { key: "minPayout", label: "Minimum payout" },
   {
     key: "consistency",
