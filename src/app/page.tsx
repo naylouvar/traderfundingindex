@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChallengesTable } from "@/components/challenges-table";
 import { Faq } from "@/components/faq";
-import { FirmTable } from "@/components/firm-table";
+import { MatchScoreTable } from "@/components/match-score-table";
 import { Newsletter } from "@/components/newsletter";
 import { OfferCard } from "@/components/offer-card";
 import { ReviewList } from "@/components/review-list";
@@ -94,7 +94,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
         {tab === "firms" && (
           <>
-            <FirmTable firms={firms.slice(0, 20)} />
+            <MatchScoreTable
+              siteData={Object.fromEntries(
+                firms.map((f) => [f.slug, { logo: f.logoUrl, foundedYear: f.foundedYear }]),
+              )}
+            />
             {firms.length > 20 && (
               <div className="text-center">
                 <Link href="/firms" className="btn-secondary">
