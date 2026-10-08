@@ -121,6 +121,7 @@ export const site = {
           { label: "All prop firms", href: "/firms" },
           { label: "Current offers", href: "/#offers" },
           { label: "Hidden rules", href: "/fine-print" },
+          { label: "Payout rules", href: "/payout-rules" },
         ],
       },
       {

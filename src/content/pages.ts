@@ -6,7 +6,7 @@
 
 export type PageDefault = { slug: string; title: string; description: string; body: string };
 
-export const RESERVED_SLUGS = ["admin", "firms", "uploads", "api", "sitemap.xml", "robots.txt", "favicon.ico"];
+export const RESERVED_SLUGS = ["admin", "firms", "fine-print", "payout-rules", "uploads", "api", "sitemap.xml", "robots.txt", "favicon.ico"];
 
 export const defaultPages: PageDefault[] = [
   {

@@ -105,6 +105,7 @@ model Firm {
   plans         Plan[]
   rules         Rule[]
   countryRules  CountryRule[]
+  payoutRules   PayoutRules?
   reviews       Review[]
   payoutReports PayoutReport[]
   threads       ForumThread[]
@@ -175,6 +176,35 @@ model RuleChange {
   changedOn DateTime
   sourceUrl String?
   createdAt DateTime @default(now())
+}
+
+// Funded-account and payout rules, one row per firm. Each field is free text
+// listed plan by plan, with amounts in account-size order (25K / 50K / 100K /
+// 150K) unless the text says otherwise. "Not stated" means no source gave the
+// value, "None" means the firm has no such rule, "Evaluation only" means it
+// stops applying once funded.
+model PayoutRules {
+  id                     String   @id @default(cuid())
+  firmId                 String   @unique
+  firm                   Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  plansCovered           String?  @db.Text
+  accountSizes           String?  @db.Text
+  minPayout              String?  @db.Text
+  consistency            String?  @db.Text // funded stage: largest day as a % of total profit
+  threshold              String?  @db.Text // profit, buffer or balance needed before a payout
+  withdrawalCaps         String?  @db.Text
+  minDays                String?  @db.Text // winning days, trading days or wait between payouts
+  winningDayMin          String?  @db.Text // daily profit needed to count as a winning day
+  newsTrading            String?  @db.Text
+  scalping               String?  @db.Text
+  automation             String?  @db.Text
+  multipleAccounts       String?  @db.Text
+  restrictedCountryCount Int?
+  restrictedCountries    String?  @db.Text // comma-separated country names
+  notes                  String?  @db.Text // conflicts between sources, values from third-party sites
+  sourceUrl              String?
+  checkedOn              DateTime?
+  updatedAt              DateTime @updatedAt
 }
 
 model CountryRule {

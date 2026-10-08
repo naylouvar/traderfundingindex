@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:payout-rules": "node prisma/import-payout-rules.mjs",
     "db:studio": "prisma studio"
   },
   "dependencies": {

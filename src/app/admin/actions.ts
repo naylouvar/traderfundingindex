@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { EDITABLE_SECTIONS, getContent, type EditableSection } from "@/lib/content";
 import { saveImage, UploadError } from "@/lib/uploads";
 import { site } from "@/content/site";
+import { payoutRuleFields } from "@/lib/payout-rules";
 import { defaultPages, RESERVED_SLUGS } from "@/content/pages";
 import { listPages } from "@/lib/pages";
 import { createSession, destroySession, passwordMatches, requireAdmin } from "@/lib/auth";
@@ -222,6 +223,36 @@ export async function deletePlan(form: FormData) {
   const plan = await db.plan.delete({ where: { id }, include: { firm: true } });
   refresh(plan.firm.slug);
   redirect(`/admin/firms/${plan.firmId}?saved=plan#plans`);
+}
+
+// Payout rules
+
+export async function savePayoutRules(form: FormData) {
+  await requireAdmin();
+  const firmId = requiredText(form, "firmId");
+  const firm = await db.firm.findUniqueOrThrow({ where: { id: firmId } });
+  const data = {
+    ...Object.fromEntries(payoutRuleFields.map((f) => [f.key, text(form, f.key)])),
+    restrictedCountryCount: int(form, "restrictedCountryCount"),
+    restrictedCountries: text(form, "restrictedCountries"),
+    notes: text(form, "notes"),
+    sourceUrl: text(form, "sourceUrl"),
+    checkedOn: date(form, "checkedOn"),
+  };
+  await db.payoutRules.upsert({ where: { firmId }, update: data, create: { ...data, firmId } });
+  refresh(firm.slug);
+  revalidatePath("/payout-rules");
+  redirect(`/admin/firms/${firmId}?saved=payout#payout-rules`);
+}
+
+export async function deletePayoutRules(form: FormData) {
+  await requireAdmin();
+  const firmId = requiredText(form, "firmId");
+  const firm = await db.firm.findUniqueOrThrow({ where: { id: firmId } });
+  await db.payoutRules.deleteMany({ where: { firmId } });
+  refresh(firm.slug);
+  revalidatePath("/payout-rules");
+  redirect(`/admin/firms/${firmId}?saved=payout#payout-rules`);
 }
 
 // Rules
