@@ -5,13 +5,16 @@ import { PlanForm } from "../../../_components/plan-form";
 import { FirmLogo } from "@/components/firm-logo";
 import { db } from "@/lib/db";
 import { usd } from "@/lib/format";
+import { payoutRuleFields, payoutRulesLegend } from "@/lib/payout-rules";
 import {
   deleteCountryRule,
   deleteFirm,
+  deletePayoutRules,
   deletePlan,
   deleteRule,
   markVerified,
   saveCountryRule,
+  savePayoutRules,
   saveRule,
   updateFirm,
 } from "../../../actions";
@@ -32,6 +35,7 @@ const savedMessages: Record<string, string> = {
   verified: "Marked as checked today.",
   plan: "Plans updated.",
   rule: "Rules updated.",
+  payout: "Payout rules updated.",
   country: "Countries updated.",
 };
 
@@ -51,6 +55,7 @@ export default async function EditFirmPage({ params, searchParams }: PageProps<"
       plans: { orderBy: { accountSizeUsd: "asc" } },
       rules: { orderBy: [{ severity: "desc" }, { createdAt: "asc" }] },
       countryRules: { orderBy: { countryCode: "asc" } },
+      payoutRules: true,
     },
   });
   if (!firm) notFound();
@@ -156,6 +161,65 @@ export default async function EditFirmPage({ params, searchParams }: PageProps<"
             <PlanForm firmId={firm.id} />
           </div>
         </details>
+      </Section>
+
+      <Section id="payout-rules" title="Funded account and payout rules">
+        <p className="text-sm text-muted">
+          Shown on the firm page and the payout rules comparison. Write each rule plan by plan. {payoutRulesLegend}
+        </p>
+        <form action={savePayoutRules} className="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="firmId" value={firm.id} />
+          {payoutRuleFields.map((f) => (
+            <TextArea
+              key={f.key}
+              label={f.hint ? `${f.label} (${f.hint})` : f.label}
+              name={f.key}
+              defaultValue={firm.payoutRules?.[f.key]}
+              rows={f.key === "plansCovered" || f.key === "accountSizes" ? 2 : 4}
+            />
+          ))}
+          <Field
+            label="Restricted countries (count)"
+            name="restrictedCountryCount"
+            type="number"
+            defaultValue={firm.payoutRules?.restrictedCountryCount}
+          />
+          <Field
+            label="Checked on"
+            name="checkedOn"
+            type="date"
+            defaultValue={firm.payoutRules?.checkedOn?.toISOString().slice(0, 10)}
+          />
+          <TextArea
+            label="Restricted countries (comma-separated names)"
+            name="restrictedCountries"
+            defaultValue={firm.payoutRules?.restrictedCountries}
+            rows={4}
+            className="sm:col-span-2"
+          />
+          <TextArea
+            label="Sources and conflicts (shown as a warning on the firm page)"
+            name="notes"
+            defaultValue={firm.payoutRules?.notes}
+            className="sm:col-span-2"
+          />
+          <Field
+            label="Source URL"
+            name="sourceUrl"
+            type="url"
+            defaultValue={firm.payoutRules?.sourceUrl}
+            className="sm:col-span-2"
+          />
+          <div className="sm:col-span-2">
+            <button className="btn-primary">Save payout rules</button>
+          </div>
+        </form>
+        {firm.payoutRules && (
+          <form action={deletePayoutRules}>
+            <input type="hidden" name="firmId" value={firm.id} />
+            <button className="btn-danger">Remove payout rules</button>
+          </form>
+        )}
       </Section>
 
       <Section id="rules" title={`Rules and fine print (${firm.rules.length})`}>

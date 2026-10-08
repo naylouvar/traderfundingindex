@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FirmTable } from "@/components/firm-table";
 import { getRankedFirms } from "@/lib/firms";
 
@@ -13,7 +14,12 @@ export default async function FirmsPage({ searchParams }: PageProps<"/firms">) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold">Futures prop firms</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-3xl font-semibold">Futures prop firms</h1>
+        <Link href="/payout-rules" className="text-sm text-accent hover:underline">
+          Compare payout rules
+        </Link>
+      </div>
       <form className="flex max-w-md gap-2">
         <input name="q" type="search" defaultValue={query} placeholder="Search firms" aria-label="Search firms" className="input" />
         <button className="btn-secondary">Search</button>

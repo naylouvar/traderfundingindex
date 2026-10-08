@@ -3,6 +3,7 @@ import { ReviewList } from "@/components/review-list";
 import { db } from "@/lib/db";
 import { FinePrintCard } from "@/components/fine-print-card";
 import { Markdown } from "@/components/markdown";
+import { PayoutRulesSection } from "@/components/payout-rules";
 import { drawdownLabel, usd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
       plans: { orderBy: { accountSizeUsd: "asc" } },
       rules: { orderBy: [{ severity: "desc" }, { createdAt: "asc" }] },
       countryRules: { where: { status: { not: "ALLOWED" } } },
+      payoutRules: true,
       reviews: {
         where: { moderation: "APPROVED" },
         orderBy: { createdAt: "desc" },
@@ -90,6 +92,8 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
         )}
       </section>
 
+      {firm.payoutRules && <PayoutRulesSection firmName={firm.name} rules={firm.payoutRules} />}
+
       {finePrint.length > 0 && (
         <section id="fine-print" className="scroll-mt-6 space-y-4">
           <div className="space-y-1">
@@ -132,14 +136,24 @@ export default async function FirmPage({ params }: PageProps<"/firms/[slug]">) {
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Country restrictions</h2>
-        {firm.countryRules.length === 0 ? (
-          <p className="text-muted">No restrictions documented yet.</p>
-        ) : (
+        {firm.countryRules.length > 0 && (
           <p className="text-sm">
             {firm.countryRules
               .map((c) => `${c.countryCode} (${c.status.toLowerCase()})`)
               .join(", ")}
           </p>
+        )}
+        {firm.payoutRules?.restrictedCountries && (
+          <div className="space-y-1 text-sm">
+            <p className="text-muted">
+              {firm.name} does not accept traders from{" "}
+              {firm.payoutRules.restrictedCountryCount ?? "these"} countries and regions:
+            </p>
+            <p>{firm.payoutRules.restrictedCountries}</p>
+          </div>
+        )}
+        {firm.countryRules.length === 0 && !firm.payoutRules?.restrictedCountries && (
+          <p className="text-muted">No restrictions documented yet.</p>
         )}
       </section>
 
