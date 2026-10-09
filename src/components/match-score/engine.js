@@ -73,11 +73,11 @@ export const CONFIG = {
 
 /* ===== Filter options ===== */
 const STYLES = [
-  { id: 'scalper', label: 'Scalper' },
-  { id: 'intraday', label: 'Intraday' },
-  { id: 'news', label: 'News trader' },
-  { id: 'swing', label: 'Swing' },
-  { id: 'bot', label: 'Bot/Algo' },
+  { id: 'scalper', label: 'Scalper', icon: '⚡' },
+  { id: 'intraday', label: 'Intraday', icon: '📈' },
+  { id: 'news', label: 'News trader', icon: '📰' },
+  { id: 'swing', label: 'Swing', icon: '🌙' },
+  { id: 'bot', label: 'Bot/Algo', icon: '🤖' },
 ];
 const SIZES = [25, 50, 100, 150];
 const ACCOUNTS = [
@@ -120,7 +120,7 @@ export function mountMatchScore(root, FIRMS) {
   const N = CONFIG.neutral;
 
   /* ----- State ----- */
-  const defaults = () => ({ styles: new Set(), size: null, country: detectCountry(), accounts: null, platform: '', priority: null });
+  const defaults = () => ({ styles: new Set(), size: CONFIG.defaultSize, country: detectCountry(), accounts: null, platform: '', priority: null });
   let detected = null;
   let state;
   let sortCol = null, sortDir = 1; // null = match score
@@ -343,13 +343,13 @@ export function mountMatchScore(root, FIRMS) {
   ];
 
   /* ----- Rendering ----- */
-  function pills(container, items, isOn, onClick) {
+  function pills(container, items, isOn, onClick, extraClass = '') {
     container.querySelectorAll('.tfi-pill').forEach((b) => b.remove());
     for (const it of items) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'tfi-pill';
-      b.textContent = it.label;
+      b.className = 'tfi-pill ' + extraClass;
+      b.innerHTML = (it.icon ? `<span class="tfi-ico" aria-hidden="true">${it.icon}</span>` : '') + esc(it.label);
       b.setAttribute('aria-pressed', String(isOn(it)));
       b.addEventListener('click', () => { onClick(it); update(); });
       container.appendChild(b);
@@ -358,7 +358,7 @@ export function mountMatchScore(root, FIRMS) {
 
   function renderFilters() {
     pills($('[data-filter="styles"]'), STYLES, (s) => state.styles.has(s.id), (s) => { if (state.styles.has(s.id)) state.styles.delete(s.id); else state.styles.add(s.id); });
-    pills($('[data-filter="size"]'), SIZES.map((s) => ({ id: s, label: kLabel(s) })), (s) => state.size === s.id, (s) => { state.size = state.size === s.id ? null : s.id; });
+    pills($('[data-filter="size"]'), SIZES.map((s) => ({ id: s, label: kLabel(s) })), (s) => state.size === s.id, (s) => { state.size = state.size === s.id ? null : s.id; }, 'tfi-pill--size');
     pills($('[data-filter="accounts"]'), ACCOUNTS, (a) => state.accounts === a.id, (a) => { state.accounts = state.accounts === a.id ? null : a.id; });
     pills($('[data-filter="priority"]'), Object.entries(CONFIG.priorities).map(([id, v]) => ({ id, label: v.label })), (p) => state.priority === p.id, (p) => { state.priority = state.priority === p.id ? null : p.id; });
     $('[data-filter="country"]').value = state.country;
@@ -443,7 +443,7 @@ export function mountMatchScore(root, FIRMS) {
     const pendingTxt = r.pending.length && !r.excluded ? `<div class="tfi-reason-sub"><span data-tip="${esc('Scored as neutral (50) until collected: ' + r.pending.join(', '))}">Data pending: ${r.pending.length} factor${r.pending.length === 1 ? '' : 's'}</span></div>` : '';
     const reason = r.excluded ? `<span class="bad">${esc(r.reason)}</span>` : esc(r.reason || 'Data pending');
     const cells = {
-      match: `<div class="tfi-badge" aria-label="Match score ${r.excluded ? 'not applicable' : r.score}"><span>${r.excluded ? '—' : r.score}</span></div>
+      match: `<div class="tfi-badge ${scoreTier(r)}" style="--p:${r.excluded ? 0 : r.score}" aria-label="Match score ${r.excluded ? 'not applicable' : r.score}"><span data-score="${r.excluded ? '' : r.score}">${r.excluded ? '—' : r.score}</span></div>
               <div class="tfi-reason-wrap"><div class="tfi-reason">${reason}</div>${pendingTxt}</div>`,
       firm: `<div class="tfi-firm"><span class="tfi-logo">${f.logo ? `<img src="${esc(f.logo)}" alt="">` : initials(f.firm)}</span>
               <div style="min-width:0"><div class="tfi-firm-name">${esc(f.firm)} <span class="tfi-chev">▾</span></div>
@@ -559,11 +559,70 @@ export function mountMatchScore(root, FIRMS) {
     });
   }
 
+  const scoreTier = (r) => (r.excluded ? 'tier-out' : r.score >= 70 ? 'tier-high' : r.score >= 55 ? 'tier-mid' : 'tier-low');
+
+  /* Live weight bars: shows visitors what the engine is weighing right now. */
+  const FACTOR_SHORT = { cost: 'Cost', ease: 'Risk', speed: 'Speed', size: 'Payout', friction: 'Rules', trust: 'Trust' };
+  const FACTOR_ICONS = { cost: '💰', ease: '🛡️', speed: '⏱️', size: '💸', friction: '📏', trust: '🔒' };
+  function renderEngine(weights) {
+    const boosted = state.priority && CONFIG.priorities[state.priority].factor;
+    $('[data-engine]').innerHTML = Object.keys(CONFIG.weights).map((k) => `
+      <div class="tfi-factor ${k === boosted ? 'boosted' : ''}">
+        <div class="tfi-factor-top"><span>${FACTOR_ICONS[k]} <span class="tfi-long">${FACTOR_LABELS[k]}</span><span class="tfi-short">${FACTOR_SHORT[k]}</span></span><b class="tfi-num">${Math.round(weights[k])}%</b></div>
+        <div class="tfi-factor-bar"><i style="width:${(weights[k] / CONFIG.priorityWeight) * 100}%"></i></div>
+      </div>`).join('');
+  }
+
+  /* "Your best match" card in the header. */
+  function renderBest(results, ms) {
+    const best = results.filter((r) => !r.excluded).sort((a, b) => b.score - a.score)[0];
+    const box = $('[data-best]');
+    if (!best) {
+      box.innerHTML = `<div class="tfi-best-label">Your best match</div><p class="tfi-best-none">No firm fits every filter. Loosen one to see matches.</p>`;
+      return;
+    }
+    box.innerHTML = `
+      <div class="tfi-best-label">Your best match <span class="tfi-muted">· ${results.length} firms scored in ${ms < 1 ? '<1' : Math.round(ms)} ms</span></div>
+      <div class="tfi-best-body">
+        <div class="tfi-badge tfi-badge--xl ${scoreTier(best)}" style="--p:${best.score}"><span data-score="${best.score}">${best.score}</span></div>
+        <div style="min-width:0">
+          <div class="tfi-best-name">${esc(best.f.firm)}</div>
+          <div class="tfi-muted tfi-small">${esc(best.p.plan)} · ${kLabel(best.size)}</div>
+          <div class="tfi-reason" style="margin-top:6px">${esc(best.reason)}</div>
+        </div>
+      </div>`;
+  }
+
+  /* Count each score up from its previous value so recalculation is visible. */
+  const lastScore = new Map();
+  function animateScores() {
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.querySelectorAll('[data-score]').forEach((el) => {
+      const to = Number(el.dataset.score);
+      const key = el.closest('.tfi-row')?.dataset.id || 'best';
+      const from = lastScore.has(key) ? lastScore.get(key) : to;
+      if (el.dataset.score === '') { lastScore.delete(key); return; }
+      lastScore.set(key, to);
+      if (reduce || from === to) return;
+      const t0 = performance.now();
+      const step = (t) => {
+        const k = Math.min(1, (t - t0) / 450);
+        el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
   let first = true;
   function update() {
+    const t0 = performance.now();
     const results = sortRows(evaluate(state));
+    const ms = performance.now() - t0;
     renderFilters();
     renderHead();
+    renderEngine(results[0] ? results[0].weights : CONFIG.weights);
+    renderBest(results, ms);
 
     const list = $('.tfi-rows');
     const before = new Map();
@@ -601,6 +660,7 @@ export function mountMatchScore(root, FIRMS) {
       });
     }
     first = false;
+    animateScores();
 
     const fit = results.filter((r) => !r.excluded).length;
     const out = results.length - fit;
@@ -611,7 +671,7 @@ export function mountMatchScore(root, FIRMS) {
       const label = typeof col.label === 'function' ? col.label() : col.label;
       ranked.innerHTML = `Sorted by: <strong>${esc(label)}</strong> · <button type="button" class="tfi-link" data-back>Back to match score</button>`;
     } else {
-      const personal = state.styles.size || state.size || state.priority || state.accounts || state.platform;
+      const personal = state.styles.size || (state.size && state.size !== CONFIG.defaultSize) || state.priority || state.accounts || state.platform;
       ranked.innerHTML = `Ranked by: <strong>match score</strong> · ${personal ? 'personalised to your filters' : 'tap a style to personalise'}`;
     }
   }
