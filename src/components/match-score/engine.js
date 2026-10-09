@@ -3,7 +3,7 @@
    ===================================================================== */
 export const CONFIG = {
   // Colour palette (see match-score.css): 'eagle' (gold → teal), 'retro' (gold → coral → steel blue), 'retro-warm' (gold → coral → crimson), 'emerald', 'cobalt' or 'sunset'.
-  palette: 'eagle',
+  palette: 'retro',
 
   // Factor weights in % (must add up to 100).
   weights: {
