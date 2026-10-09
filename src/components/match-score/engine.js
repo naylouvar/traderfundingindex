@@ -2,7 +2,7 @@
    SCORING CONFIG: tune the match score here.
    ===================================================================== */
 export const CONFIG = {
-  // Colour palette (see match-score.css): 'eagle' (gold → teal), 'emerald', 'cobalt' or 'sunset'.
+  // Colour palette (see match-score.css): 'eagle' (gold → teal), 'retro' (gold → coral → steel blue), 'retro-warm' (gold → coral → crimson), 'emerald', 'cobalt' or 'sunset'.
   palette: 'eagle',
 
   // Factor weights in % (must add up to 100).
