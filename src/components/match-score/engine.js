@@ -2,6 +2,9 @@
    SCORING CONFIG: tune the match score here.
    ===================================================================== */
 export const CONFIG = {
+  // Colour palette (see match-score.css): 'eagle' (gold → teal), 'emerald', 'cobalt' or 'sunset'.
+  palette: 'eagle',
+
   // Factor weights in % (must add up to 100).
   weights: {
     cost: 20,      // price + activation fee for the selected size
@@ -111,6 +114,7 @@ const COUNTRY_CODES = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD 
    ===================================================================== */
 /** Mounts the table inside `root` (markup from markup.js). Returns a cleanup function. */
 export function mountMatchScore(root, FIRMS) {
+  if (!root.dataset.palette) root.dataset.palette = CONFIG.palette;
   const $ = (s) => root.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const usd = (n) => '$' + Math.round(n).toLocaleString('en-US');
