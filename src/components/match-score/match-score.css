@@ -32,8 +32,8 @@
 /* ===== Colour palettes =====
    Pick one with CONFIG.palette in engine.js. Each palette is 3 gradient stops (c1 → c2 → c3);
    c1 is also the accent (selected size, links). *-rgb are the same colours as "R G B" for transparency. */
-.tfi, .tfi[data-palette="eagle"] {
-  /* Eagle: gold → teal → sky. Default. */
+.tfi[data-palette="eagle"] {
+  /* Eagle: gold → teal → sky */
   --c1: #f5b52e; --c1-rgb: 245 181 46; --c1-soft: #fde4a6;
   --c2: #2dd4bf; --c2-rgb: 45 212 191;
   --c3: #38bdf8; --c3-rgb: 56 189 248;
@@ -49,6 +49,18 @@
   --c1: #67e8f9; --c1-rgb: 103 232 249; --c1-soft: #cffafe;
   --c2: #3b82f6; --c2-rgb: 59 130 246;
   --c3: #2563eb; --c3-rgb: 37 99 235;
+}
+.tfi, .tfi[data-palette="retro"] {
+  /* Default. Retro: gold → coral → steel blue (palette #F2F0EB #6BA7BF #F2B138 #F25A38 #960303) */
+  --c1: #f2b138; --c1-rgb: 242 177 56; --c1-soft: #f2f0eb;
+  --c2: #f25a38; --c2-rgb: 242 90 56;
+  --c3: #6ba7bf; --c3-rgb: 107 167 191;
+}
+.tfi[data-palette="retro-warm"] {
+  /* Retro warm: gold → coral → crimson (#960303 lifted so it reads on a dark background) */
+  --c1: #f2b138; --c1-rgb: 242 177 56; --c1-soft: #f2f0eb;
+  --c2: #f25a38; --c2-rgb: 242 90 56;
+  --c3: #c0242a; --c3-rgb: 192 36 42;
 }
 .tfi[data-palette="sunset"] {
   /* Sunset: the original orange → pink → purple */
